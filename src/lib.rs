@@ -1,6 +1,6 @@
-mod blec;
 pub mod components;
-pub use blec::Blec;
+mod sector;
+pub use sector::Sector;
 
 #[cfg(test)]
 mod tests {

@@ -21,18 +21,18 @@ pub struct Manual; // Growing/Shrinking has to be done manually
 //TODO IMPL FOR STATES
 pub trait DefaultIter {} // If the state implements this the default iter behaviour gets applied
 
-pub struct Blec<'a, T: 'a, State> {
+pub struct Sector<'a, T: 'a, State> {
     ptr: NonNull<T>,
     cap: usize,
     len: usize,
     phantom: PhantomData<(State, &'a T)>,
 }
 
-impl<'a, T, State> Blec<'a, T, State> {
-    pub fn new() -> Blec<'a, T, Normal> {
+impl<'a, T, State> Sector<'a, T, State> {
+    pub fn new() -> Sector<'a, T, Normal> {
         let cap = if mem::size_of::<T>() == 0 { !0 } else { 0 };
 
-        Blec {
+        Sector {
             ptr: NonNull::dangling(),
             cap,
             len: 0,
@@ -41,7 +41,7 @@ impl<'a, T, State> Blec<'a, T, State> {
     }
 }
 
-impl<T, State> Drop for Blec<'_, T, State> {
+impl<T, State> Drop for Sector<'_, T, State> {
     fn drop(&mut self) {
         if self.cap != 0 {
             if self.len > 0 && mem::size_of::<T>() != 0 {
@@ -60,7 +60,7 @@ impl<T, State> Drop for Blec<'_, T, State> {
     }
 }
 
-impl<T, Unlocked> Deref for Blec<'_, T, Unlocked> {
+impl<T, Unlocked> Deref for Sector<'_, T, Unlocked> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -68,7 +68,7 @@ impl<T, Unlocked> Deref for Blec<'_, T, Unlocked> {
     }
 }
 
-impl<T, Unlocked> DerefMut for Blec<'_, T, Unlocked> {
+impl<T, Unlocked> DerefMut for Sector<'_, T, Unlocked> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { slice::from_raw_parts_mut(self.ptr.as_ptr(), self.len) }
     }
@@ -127,22 +127,22 @@ impl<T> Drop for IntoIter<T> {
     }
 }
 
-impl<T, State: DefaultIter> IntoIterator for Blec<'_, T, State> {
+impl<T, State: DefaultIter> IntoIterator for Sector<'_, T, State> {
     type Item = T;
 
     type IntoIter = IntoIter<T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        let blec = ManuallyDrop::new(self);
+        let sector = ManuallyDrop::new(self);
 
         IntoIter {
-            buf: blec.ptr,
-            cap: blec.cap,
-            start: blec.ptr.as_ptr(),
-            end: if blec.cap == 0 {
-                blec.ptr.as_ptr()
+            buf: sector.ptr,
+            cap: sector.cap,
+            start: sector.ptr.as_ptr(),
+            end: if sector.cap == 0 {
+                sector.ptr.as_ptr()
             } else {
-                unsafe { blec.ptr.as_ptr().add(blec.len) }
+                unsafe { sector.ptr.as_ptr().add(sector.len) }
             },
         }
     }

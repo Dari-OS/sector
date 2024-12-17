@@ -2,9 +2,9 @@ use std::ptr::NonNull;
 
 use crate::components::{Cap, Grow, Index, Insert, Len, Pop, Ptr, Push, Remove, Shrink};
 
-use super::{Blec, Normal};
+use super::{Normal, Sector};
 
-impl<'a, T> Blec<'a, T, Normal> {
+impl<'a, T> Sector<'a, T, Normal> {
     pub fn push(&mut self, elem: T) {
         self.__push(elem);
     }
@@ -38,7 +38,7 @@ impl<'a, T> Blec<'a, T, Normal> {
     }
 }
 
-impl<T> Ptr<T> for Blec<'_, T, Normal> {
+impl<T> Ptr<T> for Sector<'_, T, Normal> {
     fn __ptr(&self) -> NonNull<T> {
         self.ptr
     }
@@ -48,7 +48,7 @@ impl<T> Ptr<T> for Blec<'_, T, Normal> {
     }
 }
 
-impl<T> Len for Blec<'_, T, Normal> {
+impl<T> Len for Sector<'_, T, Normal> {
     fn __len(&self) -> usize {
         self.len
     }
@@ -58,7 +58,7 @@ impl<T> Len for Blec<'_, T, Normal> {
     }
 }
 
-impl<T> Cap for Blec<'_, T, Normal> {
+impl<T> Cap for Sector<'_, T, Normal> {
     fn __cap(&self) -> usize {
         self.cap
     }
@@ -68,7 +68,7 @@ impl<T> Cap for Blec<'_, T, Normal> {
     }
 }
 
-unsafe impl<T> Grow<T> for Blec<'_, T, Normal> {
+unsafe impl<T> Grow<T> for Sector<'_, T, Normal> {
     // Only grows the vec if needed
     unsafe fn __grow(&mut self) {
         if self.len == self.cap {
@@ -78,15 +78,15 @@ unsafe impl<T> Grow<T> for Blec<'_, T, Normal> {
     }
 }
 
-unsafe impl<T> Shrink<T> for Blec<'_, T, Normal> {
+unsafe impl<T> Shrink<T> for Sector<'_, T, Normal> {
     // No shrinking behaviour for the Normal vec
     unsafe fn __shrink(&mut self) {
         return;
     }
 }
 
-impl<T> Push<T> for Blec<'_, T, Normal> {}
-impl<T> Pop<T> for Blec<'_, T, Normal> {}
-impl<T> Insert<T> for Blec<'_, T, Normal> {}
-impl<T> Index<T> for Blec<'_, T, Normal> {}
-impl<T> Remove<T> for Blec<'_, T, Normal> {}
+impl<T> Push<T> for Sector<'_, T, Normal> {}
+impl<T> Pop<T> for Sector<'_, T, Normal> {}
+impl<T> Insert<T> for Sector<'_, T, Normal> {}
+impl<T> Index<T> for Sector<'_, T, Normal> {}
+impl<T> Remove<T> for Sector<'_, T, Normal> {}

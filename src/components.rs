@@ -20,6 +20,7 @@ pub trait Ptr<T>: Drop {
     ///
     /// * `new_ptr` - The new non-null pointer to replace the existing pointer.
     fn __ptr_set(&mut self, new_ptr: NonNull<T>);
+    
 }
 
 /// **Trait `Cap`**

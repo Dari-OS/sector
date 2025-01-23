@@ -2,7 +2,9 @@ use std::ptr::NonNull;
 
 use crate::components::{Cap, Grow, Index, Insert, Len, Pop, Ptr, Push, Remove, Shrink};
 
-use super::{Normal, Sector};
+use crate::Sector;
+
+pub struct Normal;
 
 impl<'a, T> Sector<'a, T, Normal> {
     pub fn push(&mut self, elem: T) {

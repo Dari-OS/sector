@@ -1,13 +1,14 @@
 use std::{
     alloc::{self, Layout},
     marker::PhantomData,
-    mem::{self, ManuallyDrop},
+    mem,
     ops::{Deref, DerefMut},
     ptr::{self, NonNull},
     slice,
 };
 
 mod normal;
+//TODO: Maybe have the states in a different mod?
 
 pub struct Normal; // Grows
 pub struct Dynamic; // Grows and shrinks
@@ -17,7 +18,7 @@ pub struct Tight; // Always the EXACT size in memory like its elements. Pushing 
                   // popping shrinks by one.
 pub struct Manual; // Growing/Shrinking has to be done manually
 
-//TODO IMPL FOR STATES
+//TODO: Impl this for all states. Or make a macro to do this?
 pub trait DefaultIter {} // If the state implements this the default iter behaviour gets applied
 
 pub struct Sector<'a, T, State> {
@@ -208,6 +209,7 @@ pub struct Drain<'a, T: 'a> {
     iter: RawIter<T>,
 }
 
+//TODO: Look into lifetimes warning
 impl<'a, T> Iterator for Drain<'a, T> {
     type Item = T;
 

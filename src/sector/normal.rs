@@ -40,11 +40,11 @@ impl<'a, T> Sector<'a, T, Normal> {
 
 impl<T> Ptr<T> for Sector<'_, T, Normal> {
     fn __ptr(&self) -> NonNull<T> {
-        self.ptr
+        self.buf.ptr
     }
 
     fn __ptr_set(&mut self, new_ptr: NonNull<T>) {
-        self.ptr = new_ptr;
+        self.buf.ptr = new_ptr;
     }
 }
 
@@ -60,20 +60,20 @@ impl<T> Len for Sector<'_, T, Normal> {
 
 impl<T> Cap for Sector<'_, T, Normal> {
     fn __cap(&self) -> usize {
-        self.cap
+        self.buf.cap
     }
 
     fn __cap_set(&mut self, new_cap: usize) {
-        self.cap = new_cap;
+        self.buf.cap = new_cap;
     }
 }
 
 unsafe impl<T> Grow<T> for Sector<'_, T, Normal> {
     // Only grows the vec if needed
     unsafe fn __grow(&mut self) {
-        if self.len == self.cap {
+        if self.len == self.buf.cap {
             self.__grow_manually(self.len + 1);
-            self.cap += 1;
+            self.buf.cap += 1;
         }
     }
 }

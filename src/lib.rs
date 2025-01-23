@@ -1,5 +1,5 @@
 pub mod components;
-mod sector;
+pub mod sector;
 pub use sector::Sector;
 
 #[cfg(test)]

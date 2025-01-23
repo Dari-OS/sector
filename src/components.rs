@@ -20,7 +20,6 @@ pub trait Ptr<T>: Drop {
     ///
     /// * `new_ptr` - The new non-null pointer to replace the existing pointer.
     fn __ptr_set(&mut self, new_ptr: NonNull<T>);
-    
 }
 
 /// **Trait `Cap`**
@@ -162,6 +161,7 @@ pub unsafe trait Shrink<T>: Cap + Ptr<T> {
         let new_ptr = if new_layout.size() > 0 {
             let old_layout = Layout::array::<T>(self.__cap()).unwrap();
             let old_ptr = self.__ptr().as_ptr() as *mut u8;
+
             let new_u8_ptr = unsafe { alloc::realloc(old_ptr, old_layout, new_cap) };
 
             match NonNull::new(new_u8_ptr as *mut T) {
@@ -219,6 +219,7 @@ pub trait Resize<T>: Cap + Ptr<T> {
         } else {
             let old_layout = Layout::array::<T>(self.__cap()).unwrap();
             let old_ptr = self.__ptr().as_ptr() as *mut u8;
+
             unsafe { alloc::realloc(old_ptr, old_layout, new_layout.size()) }
         };
 

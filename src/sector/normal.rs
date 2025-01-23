@@ -73,7 +73,6 @@ unsafe impl<T> Grow<T> for Sector<'_, T, Normal> {
     unsafe fn __grow(&mut self) {
         if self.len == self.buf.cap {
             self.__grow_manually(self.len + 1);
-            self.buf.cap += 1;
         }
     }
 }

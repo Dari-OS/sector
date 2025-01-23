@@ -6,5 +6,9 @@ fn first_test() {
     sec.push("Test".to_string());
     sec.push("Hello".to_string());
     sec.push("World".to_string());
-    print!("{:?}", sec.pop());
+    assert!(sec.pop() == Option::Some("World".to_string()));
+    assert!(sec.pop() == Option::Some("Hello".to_string()));
+    assert!(sec.pop() == Option::Some("Test".to_string()));
+    assert!(sec.pop().is_none());
+    drop(sec);
 }

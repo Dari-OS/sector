@@ -1,3 +1,7 @@
+use std::ptr;
+
+use super::{Cap, Len, Ptr, Shrink};
+
 /// **Trait `Remove<T>`**
 ///
 /// Removes an element from a specified index, shifting elements to fill the gap.

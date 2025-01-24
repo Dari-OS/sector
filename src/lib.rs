@@ -1,4 +1,4 @@
-pub mod components;
+mod components;
 mod sector;
 pub mod states;
 //TODO: Make a cleaner API interface

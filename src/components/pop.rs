@@ -1,3 +1,7 @@
+use std::ptr;
+
+use super::{Cap, Len, Ptr, Shrink};
+
 /// **Trait `Pop<T>`**
 ///
 /// Removes the last element from the collection, shrinking if necessary.

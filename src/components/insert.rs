@@ -1,3 +1,7 @@
+use std::ptr;
+
+use super::{Cap, Grow, Len, Ptr};
+
 /// **Trait `Insert<T>`**
 ///
 /// Inserts an element at a specified index, shifting elements as needed.

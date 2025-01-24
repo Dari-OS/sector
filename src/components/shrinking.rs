@@ -1,3 +1,8 @@
+use std::alloc;
+use std::{alloc::Layout, mem, ptr::NonNull};
+
+use super::{Cap, Ptr};
+
 /// **Trait `Shrink<T>`**
 ///
 /// Manages reduction of allocated memory by deallocating unused space.

@@ -1,3 +1,11 @@
+use std::{
+    alloc::{self, Layout},
+    mem,
+    ptr::NonNull,
+};
+
+use super::{Cap, Ptr};
+
 /// **Trait `Grow<T>`**
 ///
 /// Manages the growth of allocated memory to accommodate more elements.

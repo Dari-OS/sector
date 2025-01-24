@@ -1,3 +1,5 @@
+use super::{Len, Ptr};
+
 /// **Trait `Index<T>`**
 ///
 /// Provides access to elements by index for reading and writing.

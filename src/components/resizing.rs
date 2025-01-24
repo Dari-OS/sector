@@ -1,3 +1,10 @@
+use std::{
+    alloc::{self, Layout},
+    ptr::NonNull,
+};
+
+use super::{Cap, Ptr};
+
 /// **Trait `Resize<T>`**
 ///
 /// Resizes the allocation to a specified capacity directly.

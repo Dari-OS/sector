@@ -6,7 +6,7 @@ use crate::Sector;
 
 pub struct Normal;
 
-impl<'a, T> Sector<'a, T, Normal> {
+impl<T> Sector<Normal, T> {
     pub fn push(&mut self, elem: T) {
         self.__push(elem);
     }
@@ -31,7 +31,7 @@ impl<'a, T> Sector<'a, T, Normal> {
         }
     }
 
-    pub fn get_mut(&'a mut self, index: usize) -> Option<&'a mut T> {
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         if index < self.__len() {
             Some(self.__get_mut(index))
         } else {
@@ -40,54 +40,52 @@ impl<'a, T> Sector<'a, T, Normal> {
     }
 }
 
-impl<T> Ptr<T> for Sector<'_, T, Normal> {
+impl<T> Ptr<T> for Sector<Normal, T> {
     fn __ptr(&self) -> NonNull<T> {
-        self.buf.ptr
+        unsafe { self.get_ptr() }
     }
 
     fn __ptr_set(&mut self, new_ptr: NonNull<T>) {
-        self.buf.ptr = new_ptr;
+        unsafe { self.set_ptr(new_ptr) };
     }
 }
 
-impl<T> Len for Sector<'_, T, Normal> {
+impl<T> Len for Sector<Normal, T> {
     fn __len(&self) -> usize {
-        self.len
+        self.get_len()
     }
 
     fn __len_set(&mut self, new_len: usize) {
-        self.len = new_len;
+        unsafe { self.set_len(new_len) };
     }
 }
 
-impl<T> Cap for Sector<'_, T, Normal> {
+impl<T> Cap for Sector<Normal, T> {
     fn __cap(&self) -> usize {
-        self.buf.cap
+        self.get_cap()
     }
 
     fn __cap_set(&mut self, new_cap: usize) {
-        self.buf.cap = new_cap;
+        unsafe { self.set_cap(new_cap) };
     }
 }
 
-unsafe impl<T> Grow<T> for Sector<'_, T, Normal> {
+unsafe impl<T> Grow<T> for Sector<Normal, T> {
     // Only grows the vec if needed
     unsafe fn __grow(&mut self) {
-        if self.len == self.buf.cap {
-            self.__grow_manually(self.len + 1);
+        if self.get_len() == self.get_cap() {
+            self.__grow_manually(self.get_len() + 1);
         }
     }
 }
 
-unsafe impl<T> Shrink<T> for Sector<'_, T, Normal> {
+unsafe impl<T> Shrink<T> for Sector<Normal, T> {
     // No shrinking behaviour for the Normal vec
-    unsafe fn __shrink(&mut self) {
-        return;
-    }
+    unsafe fn __shrink(&mut self) {}
 }
 
-impl<T> Push<T> for Sector<'_, T, Normal> {}
-impl<T> Pop<T> for Sector<'_, T, Normal> {}
-impl<T> Insert<T> for Sector<'_, T, Normal> {}
-impl<T> Index<T> for Sector<'_, T, Normal> {}
-impl<T> Remove<T> for Sector<'_, T, Normal> {}
+impl<T> Push<T> for Sector<Normal, T> {}
+impl<T> Pop<T> for Sector<Normal, T> {}
+impl<T> Insert<T> for Sector<Normal, T> {}
+impl<T> Index<T> for Sector<Normal, T> {}
+impl<T> Remove<T> for Sector<Normal, T> {}

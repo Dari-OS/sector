@@ -1,3 +1,5 @@
+use std::ptr::NonNull;
+
 /// **Trait `Ptr<T>`**
 ///
 /// Represents an interface for handling raw pointers for collection elements.

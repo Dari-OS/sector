@@ -7,28 +7,58 @@ use std::{
     slice,
 };
 
-//OKAY: Maybe have the states in a different mod?
-
-//TODO: Impl this for all states. Or make a macro to do this?
-pub trait DefaultIter {} // If the state implements this the default iter behaviour gets applied
-
-pub struct Sector<'a, State, T> {
+pub struct Sector<State, T> {
     buf: RawSec<T>,
     len: usize,
-    _state: PhantomData<(State, &'a T)>,
+    _state: PhantomData<State>,
 }
 
-impl<'a, T, S> Sector<'a, T, S> {
-    pub fn new<State>() -> Sector<'a, T, State> {
+impl<State, T> Sector<State, T> {
+    pub fn new() -> Sector<State, T> {
         Sector {
             buf: RawSec::new(),
             len: 0,
             _state: PhantomData,
         }
     }
+
+    //TODO: DOC on how unsafe using this is. Can point to NULL
+    pub(crate) unsafe fn get_ptr(&self) -> NonNull<T> {
+        self.buf.ptr
+    }
+
+    //TODO: DOC on how unsafe using this is. Can point to NULL
+    // Changing it can cause side-effects (UB)
+    pub(crate) unsafe fn get_ptr_mut(&mut self) -> NonNull<T> {
+        self.buf.ptr
+    }
+
+    //TODO: DOC on how unsafe using this is. it is. REALLY UNSAFE!
+    //BUG: This looks leaky. We are just ignoring the old ptr. Look into it!
+    pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<T>) {
+        self.buf.ptr = new_ptr;
+    }
+
+    pub(crate) fn get_cap(&self) -> usize {
+        self.buf.cap
+    }
+
+    //TODO: DOC on how unsafe using this is. it is. REALLY UNSAFE!
+    pub(crate) unsafe fn set_cap(&mut self, new_cap: usize) {
+        self.buf.cap = new_cap;
+    }
+
+    pub(crate) fn get_len(&self) -> usize {
+        self.len
+    }
+
+    //TODO: DOC on how unsafe using this is. it is. REALLY UNSAFE!
+    pub(crate) unsafe fn set_len(&mut self, new_len: usize) {
+        self.len = new_len;
+    }
 }
 
-impl<T, State> Drop for Sector<'_, T, State> {
+impl<State, T> Drop for Sector<State, T> {
     fn drop(&mut self) {
         if self.len > 0 && mem::size_of::<T>() != 0 {
             for i in 0..self.len {
@@ -41,7 +71,7 @@ impl<T, State> Drop for Sector<'_, T, State> {
     }
 }
 
-impl<T, State> Deref for Sector<'_, T, State> {
+impl<State, T> Deref for Sector<State, T> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -49,7 +79,7 @@ impl<T, State> Deref for Sector<'_, T, State> {
     }
 }
 
-impl<T, State> DerefMut for Sector<'_, T, State> {
+impl<State, T> DerefMut for Sector<State, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { slice::from_raw_parts_mut(self.buf.ptr.as_ptr(), self.len) }
     }
@@ -166,7 +196,7 @@ impl<T> Drop for IntoIter<T> {
     }
 }
 
-impl<T, State: DefaultIter> IntoIterator for Sector<'_, T, State> {
+impl<State: crate::components::DefaultIter, T> IntoIterator for Sector<State, T> {
     type Item = T;
 
     type IntoIter = IntoIter<T>;
@@ -182,7 +212,7 @@ impl<T, State: DefaultIter> IntoIterator for Sector<'_, T, State> {
     }
 }
 
-impl<'a, T, State: DefaultIter> Sector<'a, T, State> {
+impl<'a, State: crate::components::DefaultDrain, T> Sector<State, T> {
     pub fn drain(&mut self) -> Drain<'a, T> {
         let iter = unsafe { RawIter::new(&self) };
         // Sets the len to 0 to make sure the underlying sector does not get used after free
@@ -196,7 +226,7 @@ impl<'a, T, State: DefaultIter> Sector<'a, T, State> {
 }
 
 pub struct Drain<'a, T: 'a> {
-    vec: PhantomData<&'a mut Vec<T>>,
+    vec: PhantomData<&'a mut Sector<(), T>>,
     iter: RawIter<T>,
 }
 

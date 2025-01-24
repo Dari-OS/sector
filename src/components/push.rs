@@ -1,3 +1,7 @@
+use std::ptr;
+
+use super::{Cap, Grow, Len, Ptr};
+
 /// **Trait `Push<T>`**
 ///
 /// Adds new elements to the collection, growing if necessary.

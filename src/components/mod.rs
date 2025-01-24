@@ -1,7 +1,9 @@
 mod capacity;
+mod drain;
 mod growing;
 mod index;
 mod insert;
+mod iter;
 mod length;
 mod pointer;
 mod pop;
@@ -11,9 +13,11 @@ mod resizing;
 mod shrinking;
 
 pub use capacity::Cap;
+pub use drain::DefaultDrain;
 pub use growing::Grow;
 pub use index::Index;
 pub use insert::Insert;
+pub use iter::DefaultIter;
 pub use length::Len;
 pub use pointer::Ptr;
 pub use pop::Pop;

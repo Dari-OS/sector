@@ -8,7 +8,7 @@ use std::ptr::NonNull;
 /// - [`__ptr_set(ptr)`] should set the internal pointer to a new location.
 ///
 //TODO: Look into the Drop warning
-pub trait Ptr<T>: Drop {
+pub trait Ptr<T>: Drop{
     /// Returns the internal pointer.
     fn __ptr(&self) -> NonNull<T>;
 

@@ -89,3 +89,121 @@ impl<T> Pop<T> for Sector<Normal, T> {}
 impl<T> Insert<T> for Sector<Normal, T> {}
 impl<T> Index<T> for Sector<Normal, T> {}
 impl<T> Remove<T> for Sector<Normal, T> {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_push_and_get() {
+        let mut sector: Sector<Normal, i32> = Sector::new();
+
+        sector.push(10);
+        sector.push(20);
+        sector.push(30);
+
+        assert_eq!(sector.get(0), Some(&10));
+        assert_eq!(sector.get(1), Some(&20));
+        assert_eq!(sector.get(2), Some(&30));
+        assert_eq!(sector.get(3), None);
+    }
+
+    #[test]
+    fn test_pop() {
+        let mut sector: Sector<Normal, i32> = Sector::new();
+
+        sector.push(10);
+        sector.push(20);
+        sector.push(30);
+
+        assert_eq!(sector.pop(), Some(30));
+        assert_eq!(sector.pop(), Some(20));
+        assert_eq!(sector.pop(), Some(10));
+        assert_eq!(sector.pop(), None);
+    }
+
+    #[test]
+    fn test_insert() {
+        let mut sector: Sector<Normal, i32> = Sector::new();
+
+        sector.push(10);
+        sector.push(30);
+        sector.insert(1, 20);
+        assert_eq!(sector.get(0), Some(&10));
+        assert_eq!(sector.get(1), Some(&20));
+        assert_eq!(sector.get(2), Some(&30));
+    }
+
+    #[test]
+    fn test_remove() {
+        let mut sector: Sector<Normal, i32> = Sector::new();
+
+        sector.push(10);
+        sector.push(20);
+        sector.push(30);
+
+        assert_eq!(sector.remove(1), 20);
+        assert_eq!(sector.get(0), Some(&10));
+        assert_eq!(sector.get(1), Some(&30));
+        assert_eq!(sector.get(2), None);
+    }
+
+    #[test]
+    fn test_remove_on_emtpy() {
+        let mut sector: Sector<Normal, i32> = Sector::new();
+
+        sector.push(10);
+        sector.push(20);
+        sector.push(30);
+
+        assert_eq!(sector.remove(1), 20);
+        assert_eq!(sector.get(0), Some(&10));
+        assert_eq!(sector.get(1), Some(&30));
+        assert_eq!(sector.get(2), None);
+    }
+
+    #[test]
+    fn test_get_mut() {
+        let mut sector: Sector<Normal, i32> = Sector::new();
+
+        sector.push(10);
+        sector.push(20);
+        sector.push(30);
+
+        if let Some(value) = sector.get_mut(1) {
+            *value = 25;
+        }
+
+        assert_eq!(sector.get(1), Some(&25));
+    }
+
+    #[test]
+    fn test_grow_behavior() {
+        let mut sector: Sector<Normal, i32> = Sector::new();
+
+        for i in 0..100 {
+            sector.push(i);
+        }
+
+        assert_eq!(sector.get_len(), 100);
+        assert!(sector.get_cap() >= 100);
+    }
+
+    #[test]
+    fn test_empty_behavior() {
+        let mut sector: Sector<Normal, i32> = Sector::new();
+
+        assert_eq!(sector.pop(), None);
+        assert_eq!(sector.get(0), None);
+    }
+
+    #[test]
+    fn test_out_of_bounds_access() {
+        let mut sector: Sector<Normal, i32> = Sector::new();
+
+        sector.push(10);
+
+        assert_eq!(sector.get(1), None);
+        assert_eq!(sector.get_mut(1), None);
+    }
+}

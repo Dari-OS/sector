@@ -64,8 +64,15 @@ pub unsafe trait Grow<T>: Cap + Ptr<T> {
 
     /// Automatically grows the memory when needed.
     ///
-    /// This function should be called regardless of whether memory actually needs
-    /// to grow or not, as it handles the growth decision internally.
+    /// This function __may__ gets called regardless of whether memory actually needs
+    /// to grow or not. It is up to the implementation to handle that.
+    /// __(This function gets called __BEFORE__ the length was added by the insert/push/...
+    /// function. This is the __exact opposite__ behaviour of the `shrink()` function)__
+    ///
+    /// # Arguments
+    ///
+    /// - `old_len` is the old length of the sector that is currently set
+    /// - `new_len` is the new length of the sector 
     ///
     /// # Safety
     ///
@@ -75,5 +82,5 @@ pub unsafe trait Grow<T>: Cap + Ptr<T> {
     /// <div class="warning">
     /// **Warning:** Incorrect implementation will cause undefined behavior.
     /// </div>
-    unsafe fn __grow(&mut self);
+    unsafe fn __grow(&mut self, old_len: usize, new_len: usize);
 }

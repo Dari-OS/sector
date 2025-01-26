@@ -29,12 +29,13 @@ pub trait Remove<T>: Cap + Len + Ptr<T> + Shrink<T> {
             ptr::copy(
                 self.__ptr().as_ptr().add(index + 1),
                 self.__ptr().as_ptr().add(index),
-                len - index,
+                len - 1 - index,
             );
 
+            self.__len_set(len - 1);
+
             // Shrink implementation should handle reducing memory when necessary
-            self.__shrink();
-            self.__len_set(len - 1)
+            self.__shrink(len, len - 1);
         }
         result
     }

@@ -71,9 +71,8 @@ impl<T> Cap for Sector<Normal, T> {
 }
 
 unsafe impl<T> Grow<T> for Sector<Normal, T> {
-    // Only grows the vec if needed
-    unsafe fn __grow(&mut self) {
-        if self.get_len() == self.get_cap() {
+    unsafe fn __grow(&mut self, old_len: usize, _: usize) {
+        if old_len == self.get_cap() {
             self.__grow_manually(self.get_len() + 1);
         }
     }
@@ -81,7 +80,8 @@ unsafe impl<T> Grow<T> for Sector<Normal, T> {
 
 unsafe impl<T> Shrink<T> for Sector<Normal, T> {
     // No shrinking behaviour for the Normal vec
-    unsafe fn __shrink(&mut self) {}
+    unsafe fn __shrink(&mut self, _: usize, _: usize) {
+    }
 }
 
 impl<T> Push<T> for Sector<Normal, T> {}
@@ -94,6 +94,42 @@ impl<T> Remove<T> for Sector<Normal, T> {}
 mod tests {
     use super::*;
 
+    #[derive(Debug)]
+    struct ZeroSizedType;
+
+    impl PartialEq for ZeroSizedType {
+        fn eq(&self, _: &Self) -> bool {
+            true
+        }
+    }
+
+    /// Repeats the given expression _n_ times.
+    ///
+    /// # Example
+    ///
+    /// This:
+    /// ```
+    ///
+    /// let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
+    /// repeat!(sector.push(ZeroSizedType), 3);
+    /// ```
+    ///
+    /// is equivalent to:
+    /// ```
+    /// let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
+    ///
+    /// sector.push(ZeroSizedType);
+    /// sector.push(ZeroSizedType);
+    /// sector.push(ZeroSizedType);
+    /// ```
+    macro_rules! repeat {
+        ($ele:expr, $times:expr) => {{
+            for _ in 0..$times {
+                $ele;
+            }
+        }};
+    }
+
     #[test]
     fn test_push_and_get() {
         let mut sector: Sector<Normal, i32> = Sector::new();
@@ -105,6 +141,18 @@ mod tests {
         assert_eq!(sector.get(0), Some(&10));
         assert_eq!(sector.get(1), Some(&20));
         assert_eq!(sector.get(2), Some(&30));
+        assert_eq!(sector.get(3), None);
+    }
+
+    #[test]
+    fn test_push_and_get_zst() {
+        let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
+
+        repeat!(sector.push(ZeroSizedType), 3);
+
+        assert_eq!(sector.get(0), Some(&ZeroSizedType));
+        assert_eq!(sector.get(1), Some(&ZeroSizedType));
+        assert_eq!(sector.get(2), Some(&ZeroSizedType));
         assert_eq!(sector.get(3), None);
     }
 
@@ -123,6 +171,18 @@ mod tests {
     }
 
     #[test]
+    fn test_pop_zst() {
+        let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
+
+        repeat!(sector.push(ZeroSizedType), 3);
+
+        assert_eq!(sector.pop(), Some(ZeroSizedType));
+        assert_eq!(sector.pop(), Some(ZeroSizedType));
+        assert_eq!(sector.pop(), Some(ZeroSizedType));
+        assert_eq!(sector.pop(), None);
+    }
+
+    #[test]
     fn test_insert() {
         let mut sector: Sector<Normal, i32> = Sector::new();
 
@@ -132,6 +192,17 @@ mod tests {
         assert_eq!(sector.get(0), Some(&10));
         assert_eq!(sector.get(1), Some(&20));
         assert_eq!(sector.get(2), Some(&30));
+    }
+
+    #[test]
+    fn test_insert_zst() {
+        let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
+
+        repeat!(sector.push(ZeroSizedType), 2);
+        sector.insert(1, ZeroSizedType);
+        assert_eq!(sector.get(0), Some(&ZeroSizedType));
+        assert_eq!(sector.get(1), Some(&ZeroSizedType));
+        assert_eq!(sector.get(2), Some(&ZeroSizedType));
     }
 
     #[test]
@@ -149,6 +220,18 @@ mod tests {
     }
 
     #[test]
+    fn test_remove_zst() {
+        let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
+
+        repeat!(sector.push(ZeroSizedType), 3);
+
+        assert_eq!(sector.remove(1), ZeroSizedType);
+        assert_eq!(sector.get(0), Some(&ZeroSizedType));
+        assert_eq!(sector.get(1), Some(&ZeroSizedType));
+        assert_eq!(sector.get(2), None);
+    }
+
+    #[test]
     fn test_remove_on_emtpy() {
         let mut sector: Sector<Normal, i32> = Sector::new();
 
@@ -159,6 +242,18 @@ mod tests {
         assert_eq!(sector.remove(1), 20);
         assert_eq!(sector.get(0), Some(&10));
         assert_eq!(sector.get(1), Some(&30));
+        assert_eq!(sector.get(2), None);
+    }
+
+    #[test]
+    fn test_remove_on_emtpy_zst() {
+        let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
+
+        repeat!(sector.push(ZeroSizedType), 3);
+
+        assert_eq!(sector.remove(1), ZeroSizedType);
+        assert_eq!(sector.get(0), Some(&ZeroSizedType));
+        assert_eq!(sector.get(1), Some(&ZeroSizedType));
         assert_eq!(sector.get(2), None);
     }
 
@@ -190,8 +285,28 @@ mod tests {
     }
 
     #[test]
+    fn test_grow_behavior_zst() {
+        let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
+
+        for _ in 0..100 {
+            sector.push(ZeroSizedType);
+        }
+
+        assert_eq!(sector.get_len(), 100);
+        assert!(sector.get_cap() >= 100);
+    }
+
+    #[test]
     fn test_empty_behavior() {
         let mut sector: Sector<Normal, i32> = Sector::new();
+
+        assert_eq!(sector.pop(), None);
+        assert_eq!(sector.get(0), None);
+    }
+
+    #[test]
+    fn test_empty_behavior_zst() {
+        let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
 
         assert_eq!(sector.pop(), None);
         assert_eq!(sector.get(0), None);
@@ -202,6 +317,16 @@ mod tests {
         let mut sector: Sector<Normal, i32> = Sector::new();
 
         sector.push(10);
+
+        assert_eq!(sector.get(1), None);
+        assert_eq!(sector.get_mut(1), None);
+    }
+
+    #[test]
+    fn test_out_of_bounds_access_zst() {
+        let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
+
+        sector.push(ZeroSizedType);
 
         assert_eq!(sector.get(1), None);
         assert_eq!(sector.get_mut(1), None);

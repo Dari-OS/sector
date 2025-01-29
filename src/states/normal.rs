@@ -331,4 +331,83 @@ mod tests {
         assert_eq!(sector.get(1), None);
         assert_eq!(sector.get_mut(1), None);
     }
+
+    #[test]
+    fn test_deref() {
+
+        let mut sector: Sector<Normal, i32> = Sector::new();
+        sector.push(10);
+        sector.push(20);
+        sector.push(30);
+        sector.push(40);
+        sector.push(-10);
+
+        let derefed_sec = &*sector;
+
+        assert_eq!(derefed_sec.get(0), Some(&10));
+        assert_eq!(derefed_sec.get(1), Some(&20));
+        assert_eq!(derefed_sec.get(2), Some(&30));
+        assert_eq!(derefed_sec.get(4), Some(&-10));
+        assert_eq!(derefed_sec.get(5), None);
+
+    }
+    
+
+    #[test]
+    fn test_deref_zst() {
+
+        let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
+
+        repeat!(sector.push(ZeroSizedType), 5);
+        let derefed_sec = &*sector;
+
+        assert_eq!(derefed_sec.get(0), Some(&ZeroSizedType));
+        assert_eq!(derefed_sec.get(1), Some(&ZeroSizedType));
+        assert_eq!(derefed_sec.get(2), Some(&ZeroSizedType));
+        assert_eq!(derefed_sec.get(4), Some(&ZeroSizedType));
+        assert_eq!(derefed_sec.get(5), None);
+
+
+    }
+
+
+    #[test]
+    fn test_deref_mut() {
+       let mut sector: Sector<Normal, i32> = Sector::new();
+       sector.push(10);
+       sector.push(20); 
+       sector.push(30);
+       sector.push(40);
+       sector.push(-10);
+
+       let derefed_sec = &mut *sector;
+       
+       derefed_sec[0] = 100;
+       derefed_sec[1] = 200;
+       derefed_sec[4] = -100;
+
+       assert_eq!(derefed_sec.get(0), Some(&100));
+       assert_eq!(derefed_sec.get(1), Some(&200)); 
+       assert_eq!(derefed_sec.get(2), Some(&30));
+       assert_eq!(derefed_sec.get(4), Some(&-100));
+       assert_eq!(derefed_sec.get(5), None);
+
+       assert_eq!(sector.get(0), Some(&100));
+       assert_eq!(sector.get(1), Some(&200));
+    }
+
+    #[test]
+    fn test_deref_mut_zero_sized() {
+       let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
+       repeat!(sector.push(ZeroSizedType), 5);
+
+       let derefed_sec = &mut *sector;
+
+       // We can't really update ZSTs...
+       assert_eq!(derefed_sec.get(0), Some(&ZeroSizedType));
+       assert_eq!(derefed_sec.get(1), Some(&ZeroSizedType));
+       assert_eq!(derefed_sec.get(2), Some(&ZeroSizedType));
+       assert_eq!(derefed_sec.get(4), Some(&ZeroSizedType));
+       assert_eq!(derefed_sec.get(5), None);
+    }
 }

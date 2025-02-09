@@ -49,10 +49,17 @@ pub unsafe trait Shrink<T>: Cap + Ptr<T> {
         self.__cap_set(new_cap);
     }
 
-    /// Automatically grows the memory when needed.
+    /// Automatically shrinks the memory when needed.
     ///
-    /// This function should be called regardless of whether memory actually needs
-    /// to grow or not, as it handles the growth decision internally.
+    /// This function __may__ gets called regardless of whether memory actually needs
+    /// to shrink or not. It is up to the implementation to check that.
+    /// __(This function gets called AFTER the length was subtracted by the remove/pop/...
+    /// function. This is the __exact opposite__ behaviour of the `grow()` function)__
+    ///
+    /// # Arguments
+    ///
+    /// - `old_len` is the old length of the sector
+    /// - `new_len` is the new length of the sector that is currently set
     ///
     /// # Safety
     ///
@@ -62,5 +69,5 @@ pub unsafe trait Shrink<T>: Cap + Ptr<T> {
     /// <div class="warning">
     /// **Warning:** Incorrect implementation will cause undefined behavior.
     /// </div>
-    unsafe fn __shrink(&mut self);
+    unsafe fn __shrink(&mut self, old_len: usize, new_len: usize);
 }

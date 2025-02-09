@@ -21,8 +21,9 @@ pub trait Insert<T>: Cap + Len + Ptr<T> + Grow<T> {
     fn __insert(&mut self, index: usize, elem: T) {
         let len = self.__len();
         assert!(index <= len, "Index out of bounds");
-        // The grow implementation should handle whether or not to grow the underlying pointer
-        unsafe { self.__grow() };
+        if len == self.__cap() {
+            unsafe { self.__grow(len, len+1) };
+        }
 
         assert!(len < self.__cap(), "Incorrect Grow implementation");
 

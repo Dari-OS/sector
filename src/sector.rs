@@ -22,19 +22,18 @@ impl<State, T> Sector<State, T> {
         }
     }
 
-    //TODO: DOC on how unsafe using this is. Can point to NULL
+    //  TODO: DOC on how unsafe using this is. Can point to NULL
     pub(crate) unsafe fn get_ptr(&self) -> NonNull<T> {
         self.buf.ptr
     }
 
-    //TODO: DOC on how unsafe using this is. Can point to NULL
+    //  TODO: DOC on how unsafe using this is. Can point to NULL
     // Changing it can cause side-effects (UB)
     pub(crate) unsafe fn get_ptr_mut(&mut self) -> NonNull<T> {
         self.buf.ptr
     }
 
-    //TODO: DOC on how unsafe using this is. it is. REALLY UNSAFE!
-    //BUG: This looks leaky. We are just ignoring the old ptr. Look into it!
+    //   TODO: DOC on how unsafe using this is. it is. REALLY UNSAFE!
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<T>) {
         self.buf.ptr = new_ptr;
     }
@@ -43,7 +42,7 @@ impl<State, T> Sector<State, T> {
         self.buf.cap
     }
 
-    //TODO: DOC on how unsafe using this is. it is. REALLY UNSAFE!
+    //  TODO: DOC on how unsafe using this is. it is. REALLY UNSAFE!
     pub(crate) unsafe fn set_cap(&mut self, new_cap: usize) {
         self.buf.cap = new_cap;
     }
@@ -52,7 +51,7 @@ impl<State, T> Sector<State, T> {
         self.len
     }
 
-    //TODO: DOC on how unsafe using this is. it is. REALLY UNSAFE!
+    //  TODO: DOC on how unsafe using this is. it is. REALLY UNSAFE!
     pub(crate) unsafe fn set_len(&mut self, new_len: usize) {
         self.len = new_len;
     }
@@ -165,7 +164,12 @@ impl<T> DoubleEndedIterator for RawIter<T> {
             None
         } else {
             unsafe {
-                self.end = self.end.offset(-1);
+                self.end = if size_of::<T>() == 0 {
+                (self.end as usize - 1) as *const _
+                } else {
+                    self.end.offset(-1)
+                };
+
                 Some(ptr::read(self.end))
             }
         }
@@ -220,17 +224,17 @@ impl<'a, State: crate::components::DefaultDrain, T> Sector<State, T> {
 
         Drain {
             iter,
-            vec: PhantomData,
+            sec: PhantomData,
         }
     }
 }
 
 pub struct Drain<'a, T: 'a> {
-    vec: PhantomData<&'a mut Sector<(), T>>,
+    sec: PhantomData<&'a mut Sector<(), T>>,
     iter: RawIter<T>,
 }
 
-//TODO: Look into lifetimes warning
+//  TODO: Look into lifetimes warning
 impl<'a, T> Iterator for Drain<'a, T> {
     type Item = T;
 

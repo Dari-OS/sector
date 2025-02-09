@@ -6,7 +6,7 @@ use crate::Sector;
 
 pub struct Normal;
 
-impl crate::components::DefaultIter for Normal{}
+impl crate::components::DefaultIter for Normal {}
 
 impl crate::components::DefaultDrain for Normal {}
 
@@ -84,8 +84,7 @@ unsafe impl<T> Grow<T> for Sector<Normal, T> {
 
 unsafe impl<T> Shrink<T> for Sector<Normal, T> {
     // No shrinking behaviour for the Normal vec
-    unsafe fn __shrink(&mut self, _: usize, _: usize) {
-    }
+    unsafe fn __shrink(&mut self, _: usize, _: usize) {}
 }
 
 impl<T> Push<T> for Sector<Normal, T> {}
@@ -97,58 +96,7 @@ impl<T> Remove<T> for Sector<Normal, T> {}
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[derive(Debug)]
-    struct ZeroSizedType;
-
-    impl PartialEq for ZeroSizedType {
-        fn eq(&self, _: &Self) -> bool {
-            true
-        }
-    }
-
-    /// Repeats the given expression _n_ times.
-    ///
-    /// # Example
-    ///
-    /// This:
-    /// ```
-    ///
-    /// let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
-    /// repeat!(sector.push(ZeroSizedType), 3);
-    /// ```
-    ///
-    /// is equivalent to:
-    /// ```
-    /// let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
-    ///
-    /// sector.push(ZeroSizedType);
-    /// sector.push(ZeroSizedType);
-    /// sector.push(ZeroSizedType);
-    /// ```
-    macro_rules! repeat {
-        ($ele:expr, $times:expr) => {{
-            for _ in 0..$times {
-                $ele;
-            }
-        }};
-    }
-
-
-    /// A helper struct that increments a shared counter when dropped
-    /// Only used for testing purposes
-    #[derive(Debug)]
-    struct DropCounter<'a> {
-        /// Shared counter to increment on drop
-        counter: &'a std::cell::Cell<i32>,
-    }
-
-    impl<'a> Drop for DropCounter<'a> {
-        /// Increments the counter when an instance is dropped
-        fn drop(&mut self) {
-            self.counter.set(self.counter.get() + 1);
-        }
-    }
+    use crate::components::testing::*;
 
     #[test]
     fn test_push_and_get() {
@@ -354,7 +302,6 @@ mod tests {
 
     #[test]
     fn test_deref() {
-
         let mut sector: Sector<Normal, i32> = Sector::new();
         sector.push(10);
         sector.push(20);
@@ -369,13 +316,10 @@ mod tests {
         assert_eq!(derefed_sec.get(2), Some(&30));
         assert_eq!(derefed_sec.get(4), Some(&-10));
         assert_eq!(derefed_sec.get(5), None);
-
     }
-    
 
     #[test]
     fn test_deref_zst() {
-
         let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
 
         repeat!(sector.push(ZeroSizedType), 5);
@@ -386,153 +330,135 @@ mod tests {
         assert_eq!(derefed_sec.get(2), Some(&ZeroSizedType));
         assert_eq!(derefed_sec.get(4), Some(&ZeroSizedType));
         assert_eq!(derefed_sec.get(5), None);
-
-
     }
-
 
     #[test]
     fn test_deref_mut() {
-       let mut sector: Sector<Normal, i32> = Sector::new();
-       sector.push(10);
-       sector.push(20); 
-       sector.push(30);
-       sector.push(40);
-       sector.push(-10);
+        let mut sector: Sector<Normal, i32> = Sector::new();
+        sector.push(10);
+        sector.push(20);
+        sector.push(30);
+        sector.push(40);
+        sector.push(-10);
 
-       let derefed_sec = &mut *sector;
-       
-       derefed_sec[0] = 100;
-       derefed_sec[1] = 200;
-       derefed_sec[4] = -100;
+        let derefed_sec = &mut *sector;
 
-       assert_eq!(derefed_sec.get(0), Some(&100));
-       assert_eq!(derefed_sec.get(1), Some(&200)); 
-       assert_eq!(derefed_sec.get(2), Some(&30));
-       assert_eq!(derefed_sec.get(4), Some(&-100));
-       assert_eq!(derefed_sec.get(5), None);
+        derefed_sec[0] = 100;
+        derefed_sec[1] = 200;
+        derefed_sec[4] = -100;
 
-       assert_eq!(sector.get(0), Some(&100));
-       assert_eq!(sector.get(1), Some(&200));
+        assert_eq!(derefed_sec.get(0), Some(&100));
+        assert_eq!(derefed_sec.get(1), Some(&200));
+        assert_eq!(derefed_sec.get(2), Some(&30));
+        assert_eq!(derefed_sec.get(4), Some(&-100));
+        assert_eq!(derefed_sec.get(5), None);
+
+        assert_eq!(sector.get(0), Some(&100));
+        assert_eq!(sector.get(1), Some(&200));
     }
 
     #[test]
     fn test_deref_mut_zero_sized() {
-       let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
-       repeat!(sector.push(ZeroSizedType), 5);
+        let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
+        repeat!(sector.push(ZeroSizedType), 5);
 
-       let derefed_sec = &mut *sector;
+        let derefed_sec = &mut *sector;
 
-       // We can't really update ZSTs...
-       assert_eq!(derefed_sec.get(0), Some(&ZeroSizedType));
-       assert_eq!(derefed_sec.get(1), Some(&ZeroSizedType));
-       assert_eq!(derefed_sec.get(2), Some(&ZeroSizedType));
-       assert_eq!(derefed_sec.get(4), Some(&ZeroSizedType));
-       assert_eq!(derefed_sec.get(5), None);
+        // We can't really update ZSTs...
+        assert_eq!(derefed_sec.get(0), Some(&ZeroSizedType));
+        assert_eq!(derefed_sec.get(1), Some(&ZeroSizedType));
+        assert_eq!(derefed_sec.get(2), Some(&ZeroSizedType));
+        assert_eq!(derefed_sec.get(4), Some(&ZeroSizedType));
+        assert_eq!(derefed_sec.get(5), None);
     }
 
     #[test]
     fn test_into_iter_next() {
+        let mut sector: Sector<Normal, i32> = Sector::new();
+        sector.push(1000);
+        sector.push(20528);
+        sector.push(3522);
+        sector.push(529388);
+        sector.push(-81893);
+        sector.push(-238146);
 
-       let mut sector: Sector<Normal, i32> = Sector::new();
-       sector.push(1000);
-       sector.push(20528); 
-       sector.push(3522);
-       sector.push(529388);
-       sector.push(-81893);
-       sector.push(-238146);
+        let mut iter_sec = sector.into_iter();
 
-       let mut iter_sec = sector.into_iter();
-
-       assert_eq!(iter_sec.next(), Some(1000));
-       assert_eq!(iter_sec.next(), Some(20528));
-       assert_eq!(iter_sec.next(), Some(3522));
-       assert_eq!(iter_sec.next(), Some(529388));
-       assert_eq!(iter_sec.next(), Some(-81893));
-       assert_eq!(iter_sec.next(), Some(-238146));
-       assert_eq!(iter_sec.next(), None);
-       assert_eq!(iter_sec.next(), None);
-       assert_eq!(iter_sec.next(), None);
-
+        assert_eq!(iter_sec.next(), Some(1000));
+        assert_eq!(iter_sec.next(), Some(20528));
+        assert_eq!(iter_sec.next(), Some(3522));
+        assert_eq!(iter_sec.next(), Some(529388));
+        assert_eq!(iter_sec.next(), Some(-81893));
+        assert_eq!(iter_sec.next(), Some(-238146));
+        assert_eq!(iter_sec.next(), None);
+        assert_eq!(iter_sec.next(), None);
+        assert_eq!(iter_sec.next(), None);
     }
-
 
     #[test]
     fn test_into_iter_next_zst() {
+        let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
+        repeat!(sector.push(ZeroSizedType), 6);
 
-       let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
-       repeat!(sector.push(ZeroSizedType), 6);
+        let mut iter_sec = sector.into_iter();
 
-       let mut iter_sec = sector.into_iter();
-
-       assert_eq!(iter_sec.next(), Some(ZeroSizedType));
-       assert_eq!(iter_sec.next(), Some(ZeroSizedType));
-       assert_eq!(iter_sec.next(), Some(ZeroSizedType));
-       assert_eq!(iter_sec.next(), Some(ZeroSizedType));
-       assert_eq!(iter_sec.next(), Some(ZeroSizedType));
-       assert_eq!(iter_sec.next(), Some(ZeroSizedType));
-       assert_eq!(iter_sec.next(), None);
-       assert_eq!(iter_sec.next(), None);
-       assert_eq!(iter_sec.next(), None);
-       assert_eq!(iter_sec.next(), None);
-
-
+        assert_eq!(iter_sec.next(), Some(ZeroSizedType));
+        assert_eq!(iter_sec.next(), Some(ZeroSizedType));
+        assert_eq!(iter_sec.next(), Some(ZeroSizedType));
+        assert_eq!(iter_sec.next(), Some(ZeroSizedType));
+        assert_eq!(iter_sec.next(), Some(ZeroSizedType));
+        assert_eq!(iter_sec.next(), Some(ZeroSizedType));
+        assert_eq!(iter_sec.next(), None);
+        assert_eq!(iter_sec.next(), None);
+        assert_eq!(iter_sec.next(), None);
+        assert_eq!(iter_sec.next(), None);
     }
-
 
     #[test]
     fn test_into_iter_back() {
+        let mut sector: Sector<Normal, i32> = Sector::new();
+        sector.push(1000);
+        sector.push(20528);
+        sector.push(3522);
+        sector.push(529388);
+        sector.push(-81893);
+        sector.push(-238146);
 
-       let mut sector: Sector<Normal, i32> = Sector::new();
-       sector.push(1000);
-       sector.push(20528); 
-       sector.push(3522);
-       sector.push(529388);
-       sector.push(-81893);
-       sector.push(-238146);
+        let mut iter_sec = sector.into_iter();
 
-       let mut iter_sec = sector.into_iter();
-
-       assert_eq!(iter_sec.next_back(), Some(-238146));
-       assert_eq!(iter_sec.next_back(), Some(-81893));
-       assert_eq!(iter_sec.next_back(), Some(529388));
-       assert_eq!(iter_sec.next_back(), Some(3522));
-       assert_eq!(iter_sec.next_back(), Some(20528));
-       assert_eq!(iter_sec.next_back(), Some(1000));
-       assert_eq!(iter_sec.next(), None);
-       assert_eq!(iter_sec.next(), None);
-       assert_eq!(iter_sec.next(), None);
-       assert_eq!(iter_sec.next(), None);
-
+        assert_eq!(iter_sec.next_back(), Some(-238146));
+        assert_eq!(iter_sec.next_back(), Some(-81893));
+        assert_eq!(iter_sec.next_back(), Some(529388));
+        assert_eq!(iter_sec.next_back(), Some(3522));
+        assert_eq!(iter_sec.next_back(), Some(20528));
+        assert_eq!(iter_sec.next_back(), Some(1000));
+        assert_eq!(iter_sec.next(), None);
+        assert_eq!(iter_sec.next(), None);
+        assert_eq!(iter_sec.next(), None);
+        assert_eq!(iter_sec.next(), None);
     }
-
 
     #[test]
     fn test_into_iter_back_zst() {
+        let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
 
-       let mut sector: Sector<Normal, ZeroSizedType> = Sector::new();
+        repeat!(sector.push(ZeroSizedType), 6);
 
+        let mut iter_sec = sector.into_iter();
 
-       repeat!(sector.push(ZeroSizedType), 6);
-
-       let mut iter_sec = sector.into_iter();
-
-
-
-       assert_eq!(iter_sec.next_back(), Some(ZeroSizedType));
-       assert_eq!(iter_sec.next_back(), Some(ZeroSizedType));
-       assert_eq!(iter_sec.next_back(), Some(ZeroSizedType));
-       assert_eq!(iter_sec.next_back(), Some(ZeroSizedType));
-       assert_eq!(iter_sec.next_back(), Some(ZeroSizedType));
-       assert_eq!(iter_sec.next_back(), Some(ZeroSizedType));
-       assert_eq!(iter_sec.next_back(), None);
-       assert_eq!(iter_sec.next_back(), None);
-       assert_eq!(iter_sec.next_back(), None);
-       assert_eq!(iter_sec.next_back(), None);
-
+        assert_eq!(iter_sec.next_back(), Some(ZeroSizedType));
+        assert_eq!(iter_sec.next_back(), Some(ZeroSizedType));
+        assert_eq!(iter_sec.next_back(), Some(ZeroSizedType));
+        assert_eq!(iter_sec.next_back(), Some(ZeroSizedType));
+        assert_eq!(iter_sec.next_back(), Some(ZeroSizedType));
+        assert_eq!(iter_sec.next_back(), Some(ZeroSizedType));
+        assert_eq!(iter_sec.next_back(), None);
+        assert_eq!(iter_sec.next_back(), None);
+        assert_eq!(iter_sec.next_back(), None);
+        assert_eq!(iter_sec.next_back(), None);
     }
 
-#[test]
+    #[test]
     fn test_drain_next() {
         let mut sector: Sector<Normal, i32> = Sector::new();
 
@@ -567,7 +493,7 @@ mod tests {
     #[test]
     fn test_drain_next_back() {
         let mut sector: Sector<Normal, i32> = Sector::new();
-        
+
         sector.push(10);
         sector.push(20);
         sector.push(30);
@@ -618,7 +544,6 @@ mod tests {
 
     #[test]
     fn test_drain_size_hint() {
-
         let mut sector: Sector<Normal, i32> = Sector::new();
 
         for i in 0..5 {
@@ -635,7 +560,6 @@ mod tests {
         assert_eq!(lower, 4);
         assert_eq!(upper, Some(4));
     }
-
 
     #[test]
     fn test_drain_drop() {

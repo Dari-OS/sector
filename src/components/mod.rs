@@ -11,6 +11,7 @@ mod push;
 mod remove;
 mod resizing;
 mod shrinking;
+pub(crate) mod testing;
 
 pub use capacity::Cap;
 pub use drain::DefaultDrain;

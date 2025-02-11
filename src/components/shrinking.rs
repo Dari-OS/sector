@@ -42,6 +42,10 @@ pub unsafe trait Shrink<T>: Cap + Ptr<T> {
                 None => alloc::handle_alloc_error(new_layout),
             }
         } else {
+            if self.__cap() > 0 {
+                let old_layout = Layout::array::<T>(self.__cap()).unwrap();
+                unsafe { alloc::dealloc(self.__ptr().as_ptr() as *mut u8, old_layout);}
+            }
             NonNull::dangling()
         };
 

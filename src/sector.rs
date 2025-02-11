@@ -14,6 +14,7 @@ pub struct Sector<State, T> {
 }
 
 impl<State, T> Sector<State, T> {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Sector<State, T> {
         Sector {
             buf: RawSec::new(),
@@ -23,35 +24,42 @@ impl<State, T> Sector<State, T> {
     }
 
     //  TODO: DOC on how unsafe using this is. Can point to NULL
+    #[allow(dead_code)]
     pub(crate) unsafe fn get_ptr(&self) -> NonNull<T> {
         self.buf.ptr
     }
 
     //  TODO: DOC on how unsafe using this is. Can point to NULL
     // Changing it can cause side-effects (UB)
+    #[allow(dead_code)]
     pub(crate) unsafe fn get_ptr_mut(&mut self) -> NonNull<T> {
         self.buf.ptr
     }
 
     //   TODO: DOC on how unsafe using this is. it is. REALLY UNSAFE!
+    #[allow(dead_code)]
     pub(crate) unsafe fn set_ptr(&mut self, new_ptr: NonNull<T>) {
         self.buf.ptr = new_ptr;
     }
 
+    #[allow(dead_code)]
     pub(crate) fn get_cap(&self) -> usize {
         self.buf.cap
     }
 
     //  TODO: DOC on how unsafe using this is. it is. REALLY UNSAFE!
+    #[allow(dead_code)]
     pub(crate) unsafe fn set_cap(&mut self, new_cap: usize) {
         self.buf.cap = new_cap;
     }
 
+    #[allow(dead_code)]
     pub(crate) fn get_len(&self) -> usize {
         self.len
     }
 
     //  TODO: DOC on how unsafe using this is. it is. REALLY UNSAFE!
+    #[allow(dead_code)]
     pub(crate) unsafe fn set_len(&mut self, new_len: usize) {
         self.len = new_len;
     }
@@ -100,7 +108,7 @@ impl<T> RawIter<T> {
             start: slice.as_ptr(),
             end: if size_of::<T>() == 0 {
                 ((slice.as_ptr() as usize) + slice.len()) as *const _
-            } else if slice.len() == 0 {
+            } else if slice.is_empty() {
                 slice.as_ptr()
             } else {
                 slice.as_ptr().add(slice.len())
@@ -109,7 +117,7 @@ impl<T> RawIter<T> {
     }
 }
 
-impl<'a, T> RawSec<T> {
+impl<T> RawSec<T> {
     fn new() -> Self {
         let cap = if mem::size_of::<T>() == 0 { !0 } else { 0 };
         RawSec {
@@ -165,7 +173,7 @@ impl<T> DoubleEndedIterator for RawIter<T> {
         } else {
             unsafe {
                 self.end = if size_of::<T>() == 0 {
-                (self.end as usize - 1) as *const _
+                    (self.end as usize - 1) as *const _
                 } else {
                     self.end.offset(-1)
                 };
@@ -216,9 +224,9 @@ impl<State: crate::components::DefaultIter, T> IntoIterator for Sector<State, T>
     }
 }
 
-impl<'a, State: crate::components::DefaultDrain, T> Sector<State, T> {
-    pub fn drain(&mut self) -> Drain<'a, T> {
-        let iter = unsafe { RawIter::new(&self) };
+impl<State: crate::components::DefaultDrain, T> Sector<State, T> {
+    pub fn drain(&mut self) -> Drain<'_, T> {
+        let iter = unsafe { RawIter::new(self) };
         // Sets the len to 0 to make sure the underlying sector does not get used after free
         self.len = 0;
 
@@ -234,8 +242,7 @@ pub struct Drain<'a, T: 'a> {
     iter: RawIter<T>,
 }
 
-//  TODO: Look into lifetimes warning
-impl<'a, T> Iterator for Drain<'a, T> {
+impl<T> Iterator for Drain<'_, T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -247,13 +254,13 @@ impl<'a, T> Iterator for Drain<'a, T> {
     }
 }
 
-impl<'a, T> DoubleEndedIterator for Drain<'a, T> {
+impl<T> DoubleEndedIterator for Drain<'_, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.iter.next_back()
     }
 }
 
-impl<'a, T> Drop for Drain<'a, T> {
+impl<T> Drop for Drain<'_, T> {
     fn drop(&mut self) {
         for _ in &mut *self {}
     }

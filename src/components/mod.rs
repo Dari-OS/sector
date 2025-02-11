@@ -24,5 +24,6 @@ pub use pointer::Ptr;
 pub use pop::Pop;
 pub use push::Push;
 pub use remove::Remove;
+#[allow(unused_imports)]
 pub use resizing::Resize;
 pub use shrinking::Shrink;

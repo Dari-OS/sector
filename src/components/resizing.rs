@@ -10,6 +10,7 @@ use super::{Cap, Ptr};
 /// Resizes the allocation to a specified capacity directly.
 ///
 /// - `__resize` - Changes capacity to a given number of elements.
+#[allow(dead_code)]
 pub trait Resize<T>: Cap + Ptr<T> {
     /// Resizes the allocation to the specified capacity.
     ///

@@ -77,7 +77,7 @@ impl<T> Cap for Sector<Normal, T> {
 unsafe impl<T> Grow<T> for Sector<Normal, T> {
     unsafe fn __grow(&mut self, old_len: usize, _: usize) {
         if old_len == self.get_cap() {
-            self.__grow_manually(self.get_len() + 1);
+            self.__grow_manually(old_len);
         }
     }
 }
@@ -472,7 +472,22 @@ mod tests {
         assert_eq!(drain_iter.next(), Some(2));
         assert_eq!(drain_iter.next(), Some(3));
         assert_eq!(drain_iter.next(), None);
-        assert_eq!(sector.get_len(), 0);
+    }
+
+    #[test]
+    fn test_drain_lifetime() {
+        let mut sector: Sector<Normal, i32> = Sector::new();
+
+        sector.push(1);
+        sector.push(2);
+        sector.push(3);
+
+        let mut drain_iter = sector.drain();
+
+        assert_eq!(drain_iter.next(), Some(1));
+        assert_eq!(drain_iter.next(), Some(2));
+        assert_eq!(drain_iter.next(), Some(3));
+        assert_eq!(drain_iter.next(), None);
     }
 
     #[test]
@@ -487,7 +502,6 @@ mod tests {
         assert_eq!(drain_iter.next(), Some(ZeroSizedType));
         assert_eq!(drain_iter.next(), Some(ZeroSizedType));
         assert_eq!(drain_iter.next(), None);
-        assert_eq!(sector.get_len(), 0);
     }
 
     #[test]
@@ -504,7 +518,6 @@ mod tests {
         assert_eq!(drain_iter.next_back(), Some(20));
         assert_eq!(drain_iter.next_back(), Some(10));
         assert_eq!(drain_iter.next_back(), None);
-        assert_eq!(sector.get_len(), 0);
     }
 
     #[test]
@@ -519,7 +532,6 @@ mod tests {
         assert_eq!(drain_iter.next_back(), Some(ZeroSizedType));
         assert_eq!(drain_iter.next_back(), Some(ZeroSizedType));
         assert_eq!(drain_iter.next_back(), None);
-        assert_eq!(sector.get_len(), 0);
     }
 
     #[test]
@@ -539,7 +551,6 @@ mod tests {
         assert_eq!(drain_iter.next_back(), Some(300));
         assert_eq!(drain_iter.next(), None);
         assert_eq!(drain_iter.next_back(), None);
-        assert_eq!(sector.get_len(), 0);
     }
 
     #[test]
@@ -576,5 +587,67 @@ mod tests {
             }
         }
         assert_eq!(counter.get(), 5);
+    }
+
+    #[test]
+    fn test_behaviour_grow() {
+        let mut sector: Sector<Normal, i32> = Sector::new();
+        assert_eq!(sector.get_cap(), 0);
+
+        sector.push(1);
+        assert_eq!(sector.get_cap(), 1);
+
+        sector.push(2);
+        assert_eq!(sector.get_cap(), 2);
+
+        repeat!(sector.push(3), 2);
+        assert_eq!(sector.get_cap(), 4);
+
+        repeat!(sector.push(4), 4);
+        assert_eq!(sector.get_cap(), 8);
+
+        repeat!(sector.push(5), 8);
+        assert_eq!(sector.get_cap(), 16);
+
+        repeat!(sector.push(6), 16);
+        assert_eq!(sector.get_cap(), 32);
+
+        repeat!(sector.push(7), 32);
+        assert_eq!(sector.get_cap(), 64);
+
+        repeat!(sector.push(8), 64);
+        assert_eq!(sector.get_cap(), 128);
+
+        repeat!(sector.push(9), 128);
+        assert_eq!(sector.get_cap(), 256);
+    }
+
+    #[test]
+    fn test_behaviour_shrink() {
+        let mut sector: Sector<Normal, i32> = Sector::new();
+        assert_eq!(sector.get_cap(), 0);
+
+        repeat!(sector.push(1), 100);
+
+        repeat!(sector.push(2), 100);
+
+        repeat!(sector.push(3), 100);
+
+        repeat!(sector.push(4), 100);
+
+        repeat!(sector.push(5), 100);
+
+        repeat!(sector.push(6), 100);
+
+        repeat!(sector.push(7), 100);
+
+        repeat!(sector.push(8), 100);
+
+        repeat!(sector.push(9), 100);
+
+        repeat!(sector.push(10), 100);
+
+        repeat!(sector.pop(), 1000);
+        assert_eq!(sector.get_cap(), 1024);
     }
 }

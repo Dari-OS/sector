@@ -72,7 +72,7 @@ pub unsafe trait Grow<T>: Cap + Ptr<T> {
     /// # Arguments
     ///
     /// - `old_len` is the old length of the sector that is currently set
-    /// - `new_len` is the new length of the sector 
+    /// - `new_len` is the new length of the sector
     ///
     /// # Safety
     ///

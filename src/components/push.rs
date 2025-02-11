@@ -19,13 +19,13 @@ pub trait Push<T>: Cap + Len + Ptr<T> + Grow<T> {
     /// - Panics if the `Grow` implementation does not correctly handle growth.
     fn __push(&mut self, elem: T) {
         let len = self.__len();
+        self.__len_set(len + 1);
         if len == self.__cap() {
-         unsafe { self.__grow(len, len+1) };
+            unsafe { self.__grow(len, len + 1) };
         }
 
         assert!(len < self.__cap(), "Incorrect Grow implementation");
 
         unsafe { ptr::write(self.__ptr().as_ptr().add(len), elem) }
-        self.__len_set(len + 1);
     }
 }

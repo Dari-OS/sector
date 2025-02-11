@@ -35,7 +35,7 @@ pub unsafe trait Shrink<T>: Cap + Ptr<T> {
             let old_layout = Layout::array::<T>(self.__cap()).unwrap();
             let old_ptr = self.__ptr().as_ptr() as *mut u8;
 
-            let new_u8_ptr = unsafe { alloc::realloc(old_ptr, old_layout, new_cap) };
+            let new_u8_ptr = unsafe { alloc::realloc(old_ptr, old_layout, new_layout.size()) };
 
             match NonNull::new(new_u8_ptr as *mut T) {
                 Some(ptr) => ptr,
@@ -58,8 +58,8 @@ pub unsafe trait Shrink<T>: Cap + Ptr<T> {
     ///
     /// # Arguments
     ///
-    /// - `old_len` is the old length of the sector
-    /// - `new_len` is the new length of the sector that is currently set
+    /// - `old_len` is the old length of the sector befor the removal of the elements
+    /// - `new_len` is the new length of the sector after the removal of the elements (current length)
     ///
     /// # Safety
     ///

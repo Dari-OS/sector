@@ -21,8 +21,9 @@ pub trait Insert<T>: Cap + Len + Ptr<T> + Grow<T> {
     fn __insert(&mut self, index: usize, elem: T) {
         let len = self.__len();
         assert!(index <= len, "Index out of bounds");
+        self.__len_set(len + 1);
         if len == self.__cap() {
-            unsafe { self.__grow(len, len+1) };
+            unsafe { self.__grow(len, len + 1) };
         }
 
         assert!(len < self.__cap(), "Incorrect Grow implementation");
@@ -36,7 +37,5 @@ pub trait Insert<T>: Cap + Len + Ptr<T> + Grow<T> {
 
             ptr::write(self.__ptr().as_ptr().add(index), elem);
         }
-
-        self.__len_set(len + 1);
     }
 }

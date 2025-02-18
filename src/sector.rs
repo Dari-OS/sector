@@ -23,6 +23,14 @@ impl<State, T> Sector<State, T> {
         }
     }
 
+    pub fn with_capacity() -> Sector<State, T> {
+        Sector {
+            buf: RawSec::new(),
+            len: 0,
+            _state: PhantomData,
+        }
+    }
+
     //  TODO: DOC on how unsafe using this is. Can point to NULL
     #[allow(dead_code)]
     pub(crate) unsafe fn get_ptr(&self) -> NonNull<T> {
@@ -124,6 +132,18 @@ impl<T> RawSec<T> {
             ptr: NonNull::dangling(),
             cap,
         }
+    }
+
+    fn with_capacity(capacity: usize) -> Self {
+       RawSec {
+           ptr: unsafe { NonNull::new(alloc::alloc() as *mut T).unwrap() },
+           cap: capacity,
+       } 
+    }
+
+    fn create_ptr(initial_capacity: Option<usize>) -> NonNull<T> {
+       let capacity =  initial_capacity.unwrap_or_default(); 
+       let layout = Layout::array::<T>(capacity);
     }
 }
 

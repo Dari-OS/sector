@@ -11,16 +11,38 @@ impl crate::components::DefaultIter for Fixed {}
 impl crate::components::DefaultDrain for Fixed {}
 
 impl<T> Sector<Fixed, T> {
-    pub fn push(&mut self, elem: T) {
-        self.__push(elem);
+    /// Pushes to the *sector* when there is enoguh capacity
+    ///
+    /// # Returns
+    ///
+    /// `true`  - If pushed successfully
+    /// `false` - If capacity is full (the __elem__ wont get pushed)
+    pub fn push(&mut self, elem: T) -> bool {
+        if self.__cap() == self.__len() {
+          self.__push(elem);
+          return true;
+        } else {
+          return false;
+        }
     }
 
     pub fn pop(&mut self) -> Option<T> {
         self.__pop()
     }
 
-    pub fn insert(&mut self, index: usize, elem: T) {
-        self.__insert(index, elem);
+    /// Inserts to the *sector* when there is enoguh capacity
+    ///
+    /// # Returns
+    ///
+    /// `true`  - If inserted successfully
+    /// `false` - If capacity is full (the __elem__ wont get pushed)
+    pub fn insert(&mut self, index: usize, elem: T) -> bool {
+        if self.__cap() == self.__len() {
+            self.__insert(index, elem);
+          return true;
+        } else {
+          return false;
+        }
     }
 
     pub fn remove(&mut self, index: usize) -> T {
@@ -75,19 +97,11 @@ impl<T> Cap for Sector<Fixed, T> {
 }
 
 unsafe impl<T> Grow<T> for Sector<Fixed, T> {
-    unsafe fn __grow(&mut self, old_len: usize, new_len: usize) {
-        if old_len == self.get_cap() {
-            self.__grow_manually(new_len - old_len);
-        }
-    }
+    unsafe fn __grow(&mut self, _: usize, _: usize) {}
 }
 
 unsafe impl<T> Shrink<T> for Sector<Fixed, T> {
-    unsafe fn __shrink(&mut self, old_len: usize, new_len: usize) {
-        if old_len > new_len && size_of::<T>() != 0 {
-            self.__shrink_manually(old_len - new_len);
-        }
-    }
+    unsafe fn __shrink(&mut self, _: usize, _: usize) {}
 }
 
 impl<T> Push<T> for Sector<Fixed, T> {}

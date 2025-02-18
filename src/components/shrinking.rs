@@ -24,6 +24,7 @@ pub unsafe trait Shrink<T>: Cap + Ptr<T> {
     /// # Panics
     ///
     /// - Panics if `len_to_sub` exceeds the current capacity.
+    ///
     fn __shrink_manually(&mut self, len_to_sub: usize) {
         assert!(mem::size_of::<T>() != 0, "Capacity overflow");
         assert!(len_to_sub <= self.__cap(), "Capacity underflow");

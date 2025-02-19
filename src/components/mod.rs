@@ -1,5 +1,4 @@
 mod capacity;
-mod errors;
 mod drain;
 mod growing;
 mod index;
@@ -15,7 +14,6 @@ mod shrinking;
 pub(crate) mod testing;
 
 pub use capacity::Cap;
-pub use errors::CapacityError;
 pub use drain::DefaultDrain;
 pub use growing::Grow;
 pub use index::Index;

@@ -23,9 +23,9 @@ impl<State, T> Sector<State, T> {
         }
     }
 
-    pub fn with_capacity() -> Sector<State, T> {
+    pub fn with_capacity(capacity: usize) -> Sector<State, T> {
         Sector {
-            buf: RawSec::new(),
+            buf: RawSec::with_capacity(capacity),
             len: 0,
             _state: PhantomData,
         }
@@ -126,24 +126,43 @@ impl<T> RawIter<T> {
 }
 
 impl<T> RawSec<T> {
+
     fn new() -> Self {
-        let cap = if mem::size_of::<T>() == 0 { !0 } else { 0 };
-        RawSec {
-            ptr: NonNull::dangling(),
-            cap,
-        }
+       let (ptr, cap) = Self::create_ptr(None);
+       RawSec {
+           ptr,
+           cap,
+       }
     }
 
     fn with_capacity(capacity: usize) -> Self {
+       let (ptr, cap) = Self::create_ptr(Some(capacity));
        RawSec {
-           ptr: unsafe { NonNull::new(alloc::alloc() as *mut T).unwrap() },
-           cap: capacity,
+           ptr,
+           cap,
        } 
     }
 
-    fn create_ptr(initial_capacity: Option<usize>) -> NonNull<T> {
+    /// Creates a new (_allocated_) pointer and capacity with the correct size etc
+    ///
+    /// # Panics
+    ///
+    /// Panics, if arithmetic overflow or when the total size would exceed `isize::MAX`, returns `LayoutError` **or**
+    /// if there is a allocation error 
+    fn create_ptr(initial_capacity: Option<usize>) -> (NonNull<T>, usize) {
        let capacity =  initial_capacity.unwrap_or_default(); 
-       let layout = Layout::array::<T>(capacity);
+       if size_of::<T>() == 0 {
+           return (NonNull::dangling(), !0);
+       }
+       if capacity == 0 {
+           return (NonNull::dangling(), 0);
+       }
+       let layout = Layout::array::<T>(capacity).expect(&format!("The given capacity {capacity} overflows the layout"));
+       let ptr = unsafe { NonNull::new(alloc::alloc(layout) as *mut T) };
+       match ptr {
+          Some(ptr) => return (ptr, capacity),
+          None => alloc::handle_alloc_error(layout),
+       }
     }
 }
 

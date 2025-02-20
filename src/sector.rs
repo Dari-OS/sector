@@ -1,5 +1,5 @@
 use std::{
-    alloc::{self, Layout},
+    alloc::{self, Layout, LayoutError},
     marker::PhantomData,
     mem,
     ops::{Deref, DerefMut},
@@ -29,6 +29,14 @@ impl<State, T> Sector<State, T> {
             len: 0,
             _state: PhantomData,
         }
+    }
+
+    pub fn try_with_capacity(capacity: usize) -> Result<Sector<State, T>, LayoutError> {
+        Ok(Sector {
+            buf: RawSec::try_with_capacity(capacity)?,
+            len: 0,
+            _state: PhantomData,
+        })
     }
 
     //  TODO: DOC on how unsafe using this is. Can point to NULL
@@ -126,43 +134,50 @@ impl<T> RawIter<T> {
 }
 
 impl<T> RawSec<T> {
-
     fn new() -> Self {
-       let (ptr, cap) = Self::create_ptr(None);
-       RawSec {
-           ptr,
-           cap,
-       }
+        let (ptr, cap) = Self::create_ptr(None).unwrap();
+        RawSec { ptr, cap }
     }
 
     fn with_capacity(capacity: usize) -> Self {
-       let (ptr, cap) = Self::create_ptr(Some(capacity));
-       RawSec {
-           ptr,
-           cap,
-       } 
+        let (ptr, cap) = Self::create_ptr(Some(capacity))
+            .unwrap_or_else(|_| panic!("The given capacity {capacity} overflows the layout"));
+        RawSec { ptr, cap }
     }
 
-    /// Creates a new (_allocated_) pointer and capacity with the correct size etc
+    #[allow(dead_code)]
+    fn try_with_capacity(capacity: usize) -> Result<Self, LayoutError> {
+        let (ptr, cap) = Self::create_ptr(Some(capacity))?;
+        Ok(RawSec { ptr, cap })
+    }
+
+    /// Creates a new (_allocated_) pointer and capacity with the correct size
     ///
-    /// # Panics
+    /// # Returns
     ///
-    /// Panics, if arithmetic overflow or when the total size would exceed `isize::MAX`, returns `LayoutError` **or**
-    /// if there is a allocation error 
-    fn create_ptr(initial_capacity: Option<usize>) -> (NonNull<T>, usize) {
-       let capacity =  initial_capacity.unwrap_or_default(); 
-       if size_of::<T>() == 0 {
-           return (NonNull::dangling(), !0);
-       }
-       if capacity == 0 {
-           return (NonNull::dangling(), 0);
-       }
-       let layout = Layout::array::<T>(capacity).expect(&format!("The given capacity {capacity} overflows the layout"));
-       let ptr = unsafe { NonNull::new(alloc::alloc(layout) as *mut T) };
-       match ptr {
-          Some(ptr) => return (ptr, capacity),
-          None => alloc::handle_alloc_error(layout),
-       }
+    /// `(NonNull<T>, usize)` ~ Ptr to the allocated pointer (if no ZST) and capacity (May not be
+    /// the original one if the type is ZST)
+    ///
+    /// `LayoutError` ~ On arithmetic overflow or when the total size would exceed
+    /// __isize::MAX__
+    ///
+    /// # Aborts
+    ///
+    /// Aborts if a allocation error occures
+    fn create_ptr(initial_capacity: Option<usize>) -> Result<(NonNull<T>, usize), LayoutError> {
+        let capacity = initial_capacity.unwrap_or_default();
+        if size_of::<T>() == 0 {
+            return Ok((NonNull::dangling(), !0));
+        }
+        if capacity == 0 {
+            return Ok((NonNull::dangling(), 0));
+        }
+        let layout = Layout::array::<T>(capacity)?;
+        let ptr = unsafe { NonNull::new(alloc::alloc(layout) as *mut T) };
+        match ptr {
+            Some(ptr) => Ok((ptr, capacity)),
+            None => alloc::handle_alloc_error(layout),
+        }
     }
 }
 

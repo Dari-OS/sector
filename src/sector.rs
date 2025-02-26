@@ -1,5 +1,5 @@
 use std::{
-    alloc::{self, Layout, LayoutError},
+    alloc::{self, Layout},
     marker::PhantomData,
     mem,
     ops::{Deref, DerefMut},
@@ -7,10 +7,12 @@ use std::{
     slice,
 };
 
+use try_reserve::error::TryReserveError;
+
 pub struct Sector<State, T> {
-    buf: RawSec<T>,
-    len: usize,
-    _state: PhantomData<State>,
+    pub(super) buf: RawSec<T>,
+    pub(super) len: usize,
+    pub(super) _state: PhantomData<State>,
 }
 
 impl<State, T> Sector<State, T> {
@@ -31,7 +33,7 @@ impl<State, T> Sector<State, T> {
         }
     }
 
-    pub fn try_with_capacity(capacity: usize) -> Result<Sector<State, T>, LayoutError> {
+    pub fn try_with_capacity(capacity: usize) -> Result<Sector<State, T>, TryReserveError> {
         Ok(Sector {
             buf: RawSec::try_with_capacity(capacity)?,
             len: 0,
@@ -108,9 +110,9 @@ impl<State, T> DerefMut for Sector<State, T> {
     }
 }
 
-struct RawSec<T> {
-    ptr: NonNull<T>,
-    cap: usize,
+pub(super) struct RawSec<T> {
+    pub(super) ptr: NonNull<T>,
+    pub(super) cap: usize,
 }
 
 struct RawIter<T> {
@@ -146,7 +148,7 @@ impl<T> RawSec<T> {
     }
 
     #[allow(dead_code)]
-    fn try_with_capacity(capacity: usize) -> Result<Self, LayoutError> {
+    fn try_with_capacity(capacity: usize) -> Result<Self, TryReserveError> {
         let (ptr, cap) = Self::create_ptr(Some(capacity))?;
         Ok(RawSec { ptr, cap })
     }
@@ -158,7 +160,7 @@ impl<T> RawSec<T> {
     /// `(NonNull<T>, usize)` ~ Ptr to the allocated pointer (if no ZST) and capacity (May not be
     /// the original one if the type is ZST)
     ///
-    /// `LayoutError` ~ On arithmetic overflow or when the total size would exceed
+    /// `LayutError` ~ On arithmetic overflow or when the total size would exceed
     /// __isize::MAX__
     ///
     /// # Aborts
@@ -167,7 +169,7 @@ impl<T> RawSec<T> {
     // TODO: Look into returning `TryReserverError`.
     // Currently not possible because of the unstable status of `TryReserverErrorKind`
     // See: https://github.com/rust-lang/rust/issues/48043
-    fn create_ptr(initial_capacity: Option<usize>) -> Result<(NonNull<T>, usize), LayoutError> {
+    fn create_ptr(initial_capacity: Option<usize>) -> Result<(NonNull<T>, usize), TryReserveError> {
         let capacity = initial_capacity.unwrap_or_default();
         if size_of::<T>() == 0 {
             return Ok((NonNull::dangling(), !0));

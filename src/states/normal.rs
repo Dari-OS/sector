@@ -9,7 +9,7 @@ pub struct Normal;
 impl crate::components::DefaultIter for Normal {}
 
 impl crate::components::DefaultDrain for Normal {}
-
+/// Acts as the normal Vector from std
 impl<T> Sector<Normal, T> {
     pub fn push(&mut self, elem: T) {
         self.__push(elem);

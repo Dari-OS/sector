@@ -82,6 +82,7 @@ unsafe impl<T> Grow<T> for Sector<Dynamic, T> {
     }
 }
 
+/// TODO Document how the simple shrink algo works
 unsafe impl<T> Shrink<T> for Sector<Dynamic, T> {
     unsafe fn __shrink(&mut self, _: usize, new_len: usize) {
         if new_len == self.__cap() / 2 && self.__cap() >= 4 {

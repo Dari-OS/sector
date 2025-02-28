@@ -69,7 +69,21 @@ impl<T> Sector<Manual, T> {
     ///
     /// The actual size the Sector has grown
     pub fn grow(&mut self, cap_to_grow: usize) -> usize {
-        todo!()
+        if cap_to_grow == 0 {
+            return 0;
+        }
+
+        match self.__cap().checked_add(cap_to_grow) {
+            Some(_) => {
+                self.__grow_manually(cap_to_grow);
+                cap_to_grow
+            }
+            None => {
+                let num_to_grow = usize::MAX - cap_to_grow;
+                self.__shrink_manually(num_to_grow);
+                num_to_grow
+            }
+        }
     }
 
     /// # Returns

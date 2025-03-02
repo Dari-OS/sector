@@ -69,7 +69,8 @@ impl<T> Sector<Manual, T> {
     ///
     /// The actual size the Sector has grown
     pub fn grow(&mut self, cap_to_grow: usize) -> usize {
-        if cap_to_grow == 0 {
+        // TODO: Is this enough zst handling?
+        if cap_to_grow == 0 || size_of::<T>() == 0 {
             return 0;
         }
 
@@ -91,7 +92,9 @@ impl<T> Sector<Manual, T> {
     /// The actual size the Sector has shrunk
     pub fn shrink(&mut self, cap_to_shrink: usize) -> usize {
         // TODO: Drop itemss that get removed due to shrinking
-        if cap_to_shrink == 0 {
+
+        // TODO: Is this enough zst handling?
+        if cap_to_shrink == 0 || size_of::<T>() == 0 {
             return 0;
         }
 

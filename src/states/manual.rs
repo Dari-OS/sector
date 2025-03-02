@@ -90,7 +90,25 @@ impl<T> Sector<Manual, T> {
     ///
     /// The actual size the Sector has shrunk
     pub fn shrink(&mut self, cap_to_shrink: usize) -> usize {
-        todo!()
+        // TODO: Drop itemss that get removed due to shrinking
+        if cap_to_shrink == 0 {
+            return 0;
+        }
+
+        let shrink_factor = match self.__cap().checked_sub(cap_to_shrink) {
+            Some(_) => cap_to_shrink,
+            None => self.__cap(),
+        };
+
+        let new_cap = self.__cap() - shrink_factor;
+        if new_cap < self.__len() {
+            // TODO: TEST WTF I WROTE!!!
+            for i in new_cap..self.__len() {
+                unsafe { self.__ptr().add(i).drop_in_place() };
+            }
+        }
+        self.__shrink_manually(shrink_factor);
+        shrink_factor
     }
 }
 

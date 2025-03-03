@@ -31,6 +31,7 @@ pub unsafe trait Grow<T>: Cap + Ptr<T> {
     fn __grow_manually(&mut self, len_to_add: usize) {
         assert!(mem::size_of::<T>() != 0, "Capacity overflow");
 
+
         let (new_cap, new_layout) = if self.__cap() == 0 {
             (1, Layout::array::<T>(1).unwrap())
         } else {

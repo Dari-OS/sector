@@ -70,7 +70,7 @@ impl<T> Sector<Manual, T> {
     /// The actual size the Sector has grown
     pub fn grow(&mut self, cap_to_grow: usize) -> usize {
         // TODO: Is this enough zst handling?
-        if cap_to_grow == 0 || size_of::<T>() == 0 {
+        if cap_to_grow == 0 || size_of::<T>() == 0 || self.__cap() == usize::MAX {
             return 0;
         }
 
@@ -81,7 +81,7 @@ impl<T> Sector<Manual, T> {
             }
             None => {
                 let num_to_grow = usize::MAX - cap_to_grow;
-                self.__shrink_manually(num_to_grow);
+                self.__grow_manually(num_to_grow);
                 num_to_grow
             }
         }
@@ -91,10 +91,10 @@ impl<T> Sector<Manual, T> {
     ///
     /// The actual size the Sector has shrunk
     pub fn shrink(&mut self, cap_to_shrink: usize) -> usize {
-        // TODO: Drop itemss that get removed due to shrinking
+        // TODO: Drop items that get removed due to shrinking
 
         // TODO: Is this enough zst handling?
-        if cap_to_shrink == 0 || size_of::<T>() == 0 {
+        if cap_to_shrink == 0 || size_of::<T>() == 0 || self.__cap() == 0 {
             return 0;
         }
 
@@ -105,7 +105,6 @@ impl<T> Sector<Manual, T> {
 
         let new_cap = self.__cap() - shrink_factor;
         if new_cap < self.__len() {
-            // TODO: TEST WTF I WROTE!!!
             for i in new_cap..self.__len() {
                 unsafe { self.__ptr().add(i).drop_in_place() };
             }
@@ -318,8 +317,11 @@ mod tests {
     }
 
     #[test]
-    fn test_grow_behavior() {
+    fn test_grow_behavior_1() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(100);
+
+        assert_eq!(sector.get_len(), 0);
+        assert!(sector.get_cap() == 100);
 
         for i in 0..100 {
             assert!(sector.push(i));
@@ -327,6 +329,14 @@ mod tests {
 
         assert_eq!(sector.get_len(), 100);
         assert!(sector.get_cap() == 100);
+    }
+
+    #[test]
+    fn test_grow_behavior_2() {
+        let mut sector: Sector<Manual, i32> = Sector::new();
+        repeat!(assert_eq!(sector.pop(), None), 10);
+        assert_eq!(sector.grow(10), 10);
+        assert_eq!(sector.get_cap(), 10);
     }
 
     #[test]

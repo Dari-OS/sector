@@ -75,9 +75,14 @@ impl<T> Cap for Sector<Dynamic, T> {
 }
 
 unsafe impl<T> Grow<T> for Sector<Dynamic, T> {
-    unsafe fn __grow(&mut self, old_len: usize, _: usize) {
+    unsafe fn __grow(&mut self, old_len: usize, new_len: usize) {
         if old_len == self.get_cap() {
-            self.__grow_manually(old_len);
+            loop {
+                self.__grow_manually(if old_len == 0{  1 } else { old_len });
+                if self.__cap() >= new_len {
+                    break;
+                }
+            }
         }
     }
 }

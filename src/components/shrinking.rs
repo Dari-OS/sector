@@ -1,6 +1,8 @@
 use std::alloc;
 use std::{alloc::Layout, mem, ptr::NonNull};
 
+use try_reserve::error::{TryReserveError, TryReserveErrorKind};
+
 use super::{Cap, Ptr};
 
 /// **Trait `Shrink<T>`**
@@ -23,35 +25,67 @@ pub unsafe trait Shrink<T>: Cap + Ptr<T> {
     ///
     /// # Panics
     ///
-    /// - Panics if `len_to_sub` exceeds the current capacity.
+    /// - if `len_to_sub` exceeds the current capacity.
+    /// - if sector type is __ZST__
+    /// - if the allocaiton overflows
     ///
-    fn __shrink_manually(&mut self, len_to_sub: usize) {
+    fn __shrink_manually_unchecked(&mut self, len_to_sub: usize) {
+        // When this methode gets called it means the sector had an overflow, because ZST have a
+        // cap of usize::MAX and needing to shrink/grow this means the cap had reset to 0
         assert!(mem::size_of::<T>() != 0, "Capacity overflow");
         assert!(len_to_sub <= self.__cap(), "Capacity underflow");
+        Self::__try_shrink_manually(self, len_to_sub).unwrap();
+    }
+
+    /// Manually reduces the allocated memory by a specified number of elements.
+    ///
+    /// # Arguments
+    ///
+    /// * `len_to_sub` - The number of elements to reduce from the current capacity.
+    ///
+    /// # Returns
+    ///
+    /// - `()` When everything was successful
+    /// - `TryReserverError` When subtraction be smaller than 0, when this methode gets called on
+    /// __ZST__ or an allocation error occurs
+    fn __try_shrink_manually(&mut self, len_to_sub: usize) -> Result<(), TryReserveError> {
+        // When this methode gets called it means the sector had an overflow, because ZST have a
+        // cap of usize::MAX and needing to shrink/grow this means the cap had reset to 0
+        if mem::size_of::<T>() == 0 || len_to_sub > self.__cap() {
+            return Err(TryReserveError::from(TryReserveErrorKind::CapacityOverflow));
+        }
 
         let new_cap = self.__cap() - len_to_sub;
-        let new_layout = Layout::array::<T>(new_cap).unwrap();
+        let new_layout = Layout::array::<T>(new_cap)?;
 
         let new_ptr = if new_layout.size() > 0 {
-            let old_layout = Layout::array::<T>(self.__cap()).unwrap();
+            let old_layout = Layout::array::<T>(self.__cap())?;
             let old_ptr = self.__ptr().as_ptr() as *mut u8;
 
             let new_u8_ptr = unsafe { alloc::realloc(old_ptr, old_layout, new_layout.size()) };
 
             match NonNull::new(new_u8_ptr as *mut T) {
                 Some(ptr) => ptr,
-                None => alloc::handle_alloc_error(new_layout),
+                None => {
+                    return Err(TryReserveError::from(TryReserveErrorKind::AllocError {
+                        layout: new_layout,
+                        non_exhaustive: (),
+                    }))
+                }
             }
         } else {
             if self.__cap() > 0 {
-                let old_layout = Layout::array::<T>(self.__cap()).unwrap();
-                unsafe { alloc::dealloc(self.__ptr().as_ptr() as *mut u8, old_layout);}
+                let old_layout = Layout::array::<T>(self.__cap())?;
+                unsafe {
+                    alloc::dealloc(self.__ptr().as_ptr() as *mut u8, old_layout);
+                }
             }
             NonNull::dangling()
         };
 
         self.__ptr_set(new_ptr);
         self.__cap_set(new_cap);
+        Ok(())
     }
 
     /// Automatically shrinks the memory when needed.

@@ -76,10 +76,13 @@ impl<T> Cap for Sector<Dynamic, T> {
 
 unsafe impl<T> Grow<T> for Sector<Dynamic, T> {
     unsafe fn __grow(&mut self, old_len: usize, new_len: usize) {
+        // Checks if we need to grow
         if old_len == self.get_cap() {
+            // Grow multiple times if more then one element was pushed
             loop {
-                self.__grow_manually(if old_len == 0{  1 } else { old_len });
+                self.__grow_manually_unchecked(if old_len == 0 { 1 } else { old_len });
                 if self.__cap() >= new_len {
+                    // Stops growing if we did grow enough
                     break;
                 }
             }
@@ -93,7 +96,7 @@ unsafe impl<T> Shrink<T> for Sector<Dynamic, T> {
         if new_len == self.__cap() / 2 && self.__cap() >= 4 {
             let factor_to_add = self.__cap() % 4;
             let new_cap = self.__cap() / 4 * 3 + factor_to_add;
-            self.__shrink_manually(self.__cap() - new_cap);
+            self.__shrink_manually_unchecked(self.__cap() - new_cap);
         }
     }
 }

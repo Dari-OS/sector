@@ -4,6 +4,8 @@ use std::{
     ptr::NonNull,
 };
 
+use try_reserve::error::{TryReserveError, TryReserveErrorKind};
+
 use super::{Cap, Ptr};
 
 /// **Trait `Grow<T>`**
@@ -25,45 +27,78 @@ pub unsafe trait Grow<T>: Cap + Ptr<T> {
     ///
     /// * `len_to_add` - Number of additional elements for capacity increase.
     ///
-    /// # Aborts
+    /// # Panics
     ///
-    /// - Aborts if allocation fails.
-    fn __grow_manually(&mut self, len_to_add: usize) {
+    /// - if allocation fails or the requested length is to long.
+    /// - if the given type is __ZST__
+    fn __grow_manually_unchecked(&mut self, len_to_add: usize) {
+        // When this methode gets called it means the sector had an overflow, because ZST have a
+        // cap of usize::MAX and needing to shrink/grow this means the cap had reset to 0
         assert!(mem::size_of::<T>() != 0, "Capacity overflow");
+        Self::__try_grow_manually(self, len_to_add).unwrap();
+    }
+
+    /// Manually grows the allocated memory by a specified amount.
+    ///
+    /// # Arguments
+    ///
+    /// * `len_to_add` - Number of additional elements for capacity increase.
+    ///
+    /// # Returns
+    ///
+    /// - `()` if the given length was successfully  allocated
+    /// - `TryReserveError` if the requested length was too long, the program has an `alloc`
+    ///     error in general or the you call this on a __ZST__ type
+    ///
+    ///
+    fn __try_grow_manually(&mut self, len_to_add: usize) -> Result<(), TryReserveError> {
+        // When this methode gets called it means the sector had an overflow, because ZST have a
+        // cap of usize::MAX and needing to shrink/grow this means the cap had reset to 0
+        if mem::size_of::<T>() == 0 {
+            return Err(TryReserveError::from(TryReserveErrorKind::CapacityOverflow));
+        }
 
         if len_to_add == 0 {
-            return;
+            return Ok(());
         }
 
         let (new_cap, new_layout) = if self.__cap() == 0 {
-            (len_to_add, Layout::array::<T>(len_to_add).unwrap())
+            (len_to_add, Layout::array::<T>(len_to_add)?)
         } else {
             let new_cap = self.__cap() + len_to_add;
-            let new_layout = Layout::array::<T>(new_cap).unwrap();
+            let new_layout = Layout::array::<T>(new_cap)?;
             (new_cap, new_layout)
         };
 
-        assert!(
-            new_layout.size() <= isize::MAX as usize,
-            "Allocation too large"
-        );
+        if new_layout.size() > isize::MAX as usize {
+            return Err(TryReserveError::from(TryReserveErrorKind::AllocError {
+                layout: new_layout,
+                non_exhaustive: (),
+            }));
+        }
 
         let new_ptr = if self.__cap() == 0 {
             unsafe { alloc::alloc(new_layout) }
         } else {
             unsafe {
                 let old_ptr = self.__ptr().as_ptr() as *mut u8;
-                let old_layout = Layout::array::<T>(self.__cap()).unwrap();
+                let old_layout = Layout::array::<T>(self.__cap())?;
                 alloc::realloc(old_ptr, old_layout, new_layout.size())
             }
         };
 
         self.__ptr_set(match NonNull::new(new_ptr as *mut T) {
             Some(ptr) => ptr,
-            None => alloc::handle_alloc_error(new_layout),
+            None => {
+                return Err(TryReserveError::from(TryReserveErrorKind::AllocError {
+                    layout: new_layout,
+                    non_exhaustive: (),
+                }))
+            }
         });
 
         self.__cap_set(new_cap);
+        Ok(())
     }
 
     /// Automatically grows the memory when needed.

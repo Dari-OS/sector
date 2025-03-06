@@ -78,7 +78,7 @@ unsafe impl<T> Grow<T> for Sector<Normal, T> {
     unsafe fn __grow(&mut self, old_len: usize, new_len: usize) {
         if old_len == self.get_cap() {
             loop {
-                self.__grow_manually(if old_len == 0{  1 } else { old_len });
+                self.__grow_manually_unchecked(if old_len == 0{  1 } else { old_len });
                 if self.__cap() >= new_len {
                     break;
                 }

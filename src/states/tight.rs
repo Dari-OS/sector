@@ -77,7 +77,7 @@ impl<T> Cap for Sector<Tight, T> {
 unsafe impl<T> Grow<T> for Sector<Tight, T> {
     unsafe fn __grow(&mut self, old_len: usize, new_len: usize) {
         if old_len == self.get_cap() {
-            self.__grow_manually(new_len - old_len);
+            self.__grow_manually_unchecked(new_len - old_len);
         }
     }
 }
@@ -85,7 +85,7 @@ unsafe impl<T> Grow<T> for Sector<Tight, T> {
 unsafe impl<T> Shrink<T> for Sector<Tight, T> {
     unsafe fn __shrink(&mut self, old_len: usize, new_len: usize) {
         if old_len > new_len && size_of::<T>() != 0 {
-            self.__shrink_manually(old_len - new_len);
+            self.__shrink_manually_unchecked(old_len - new_len);
         }
     }
 }

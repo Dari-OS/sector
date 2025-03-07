@@ -106,7 +106,7 @@ impl<T> Sector<Manual, T> {
                 unsafe { self.__ptr().add(i).drop_in_place() };
             }
         }
-        match self.__try_grow_manually(shrink_factor) {
+        match self.__try_shrink_manually(shrink_factor) {
             Ok(_) => shrink_factor,
             Err(_) => 0,
         }
@@ -709,7 +709,12 @@ mod tests {
         repeat!(assert!(sector.push(50)), 50);
         // Should reject new push
         assert!(!sector.push(51));
-        //
+        // Should set the new cap to 69 + 31
+        repeat!(assert_eq!(sector.grow(1), 1), 31);
+        // Should fill up cap
+        repeat!(assert!(sector.push(31)), 31);
+        // Should reject new push
+        assert!(!sector.push(51));
     }
 
     #[test]
@@ -725,7 +730,7 @@ mod tests {
     }
 
     #[test]
-    fn test_behaviour_shrink() {
+    fn test_behaviour_shrink_1() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(1000);
         assert_eq!(sector.get_cap(), 1000);
 
@@ -763,5 +768,100 @@ mod tests {
         sector.pop();
         assert_eq!(sector.get_cap(), 1000);
         assert_eq!(sector.get_len(), 0)
+    }
+
+    #[test]
+    fn test_behaviour_shrink_2() {
+        let mut sector: Sector<Manual, i32> = Sector::with_capacity(1000);
+        assert_eq!(sector.get_cap(), 1000);
+
+        repeat!(assert!(sector.push(1)), 100);
+
+        repeat!(assert!(sector.push(2)), 100);
+
+        repeat!(assert!(sector.push(3)), 100);
+
+        repeat!(assert!(sector.push(4)), 100);
+
+        repeat!(assert!(sector.push(5)), 100);
+
+        repeat!(assert!(sector.push(6)), 100);
+
+        repeat!(assert!(sector.push(7)), 100);
+
+        repeat!(assert!(sector.push(8)), 100);
+
+        repeat!(assert!(sector.push(9)), 100);
+
+        repeat!(assert!(sector.push(10)), 100);
+
+        assert_eq!(sector.get_cap(), 1000);
+
+        assert_eq!(sector.shrink(100), 100);
+
+        assert_eq!(sector.get_cap(), 900);
+
+        assert_eq!(sector.shrink(100), 100);
+
+        assert_eq!(sector.get_cap(), 800);
+
+        assert_eq!(sector.shrink(100), 100);
+
+        assert_eq!(sector.get_cap(), 700);
+
+        assert_eq!(sector.shrink(100), 100);
+
+        assert_eq!(sector.get_cap(), 600);
+
+        assert_eq!(sector.shrink(100), 100);
+
+        assert_eq!(sector.get_cap(), 500);
+
+        assert_eq!(sector.shrink(100), 100);
+
+        assert_eq!(sector.get_cap(), 400);
+
+        assert_eq!(sector.shrink(100), 100);
+
+        assert_eq!(sector.get_cap(), 300);
+
+        assert_eq!(sector.shrink(100), 100);
+
+        assert_eq!(sector.get_cap(), 200);
+
+        assert_eq!(sector.shrink(100), 100);
+
+        assert_eq!(sector.get_cap(), 100);
+
+        assert_eq!(sector.shrink(100), 100);
+
+        assert_eq!(sector.get_cap(), 0);
+
+        assert_eq!(sector.shrink(100), 0);
+    }
+
+    #[test]
+    fn test_behaviour_shrink_3() {
+        let mut sector: Sector<Manual, i32> = Sector::new();
+        assert_eq!(sector.get_cap(), 0);
+
+        assert_eq!(sector.shrink(100), 0);
+        assert_eq!(sector.shrink(1000), 0);
+        assert_eq!(sector.shrink(!0), 0);
+
+        assert!(!sector.push(1));
+        assert!(!sector.push(1));
+        assert!(!sector.push(1));
+        assert!(!sector.push(1));
+        assert!(!sector.push(1));
+        assert!(!sector.push(1));
+        assert!(!sector.push(1));
+        assert!(!sector.push(1));
+        assert!(!sector.push(1));
+        assert!(!sector.push(1));
+        assert!(!sector.push(1));
+        assert!(!sector.push(1));
+
+        assert_eq!(sector.get_cap(), 0);
     }
 }

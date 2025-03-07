@@ -105,6 +105,7 @@ impl<T> Sector<Manual, T> {
             for i in new_cap..self.__len() {
                 unsafe { self.__ptr().add(i).drop_in_place() };
             }
+            self.__len_set(new_cap);
         }
         match self.__try_shrink_manually(shrink_factor) {
             Ok(_) => shrink_factor,

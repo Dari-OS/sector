@@ -43,14 +43,14 @@ impl<State, T> Sector<State, T> {
 
     //  TODO: DOC on how unsafe using this is. Can point to NULL
     #[allow(dead_code)]
-    pub(crate) unsafe fn get_ptr(&self) -> NonNull<T> {
+    pub unsafe fn as_ptr(&self) -> NonNull<T> {
         self.buf.ptr
     }
 
     //  TODO: DOC on how unsafe using this is. Can point to NULL
     // Changing it can cause side-effects (UB)
     #[allow(dead_code)]
-    pub(crate) unsafe fn get_ptr_mut(&mut self) -> NonNull<T> {
+    pub(crate) unsafe fn as_mut_ptr(&mut self) -> NonNull<T> {
         self.buf.ptr
     }
 
@@ -61,24 +61,24 @@ impl<State, T> Sector<State, T> {
     }
 
     #[allow(dead_code)]
-    pub(crate) fn get_cap(&self) -> usize {
+    pub fn capacity(&self) -> usize {
         self.buf.cap
     }
 
     //  TODO: DOC on how unsafe using this is. it is. REALLY UNSAFE!
     #[allow(dead_code)]
-    pub(crate) unsafe fn set_cap(&mut self, new_cap: usize) {
+    pub(crate) unsafe fn set_capacity(&mut self, new_cap: usize) {
         self.buf.cap = new_cap;
     }
 
     #[allow(dead_code)]
-    pub(crate) fn get_len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.len
     }
 
     //  TODO: DOC on how unsafe using this is. it is. REALLY UNSAFE!
     #[allow(dead_code)]
-    pub(crate) unsafe fn set_len(&mut self, new_len: usize) {
+    pub unsafe fn set_len(&mut self, new_len: usize) {
         self.len = new_len;
     }
 }

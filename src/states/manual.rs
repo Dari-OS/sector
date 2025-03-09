@@ -116,7 +116,7 @@ impl<T> Sector<Manual, T> {
 
 impl<T> Ptr<T> for Sector<Manual, T> {
     fn __ptr(&self) -> NonNull<T> {
-        unsafe { self.get_ptr() }
+        unsafe { self.as_ptr() }
     }
 
     fn __ptr_set(&mut self, new_ptr: NonNull<T>) {
@@ -126,7 +126,7 @@ impl<T> Ptr<T> for Sector<Manual, T> {
 
 impl<T> Len for Sector<Manual, T> {
     fn __len(&self) -> usize {
-        self.get_len()
+        self.len()
     }
 
     fn __len_set(&mut self, new_len: usize) {
@@ -136,11 +136,11 @@ impl<T> Len for Sector<Manual, T> {
 
 impl<T> Cap for Sector<Manual, T> {
     fn __cap(&self) -> usize {
-        self.get_cap()
+        self.capacity()
     }
 
     fn __cap_set(&mut self, new_cap: usize) {
-        unsafe { self.set_cap(new_cap) };
+        unsafe { self.set_capacity(new_cap) };
     }
 }
 
@@ -647,15 +647,15 @@ mod tests {
     fn test_behaviour_grow_1() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(100);
 
-        assert_eq!(sector.get_len(), 0);
-        assert!(sector.get_cap() == 100);
+        assert_eq!(sector.len(), 0);
+        assert!(sector.capacity() == 100);
 
         for i in 0..100 {
             assert!(sector.push(i));
         }
 
-        assert_eq!(sector.get_len(), 100);
-        assert!(sector.get_cap() == 100);
+        assert_eq!(sector.len(), 100);
+        assert!(sector.capacity() == 100);
     }
 
     #[test]
@@ -663,43 +663,43 @@ mod tests {
         let mut sector: Sector<Manual, i32> = Sector::new();
         repeat!(assert_eq!(sector.pop(), None), 10);
         assert_eq!(sector.grow(10), 10);
-        assert_eq!(sector.get_cap(), 10);
+        assert_eq!(sector.capacity(), 10);
     }
 
     #[test]
     fn test_behaviour_grow_3() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(19);
-        assert_eq!(sector.get_cap(), 19);
+        assert_eq!(sector.capacity(), 19);
 
         assert!(sector.push(1));
-        assert_eq!(sector.get_cap(), 19);
+        assert_eq!(sector.capacity(), 19);
 
         assert!(sector.push(2));
-        assert_eq!(sector.get_cap(), 19);
+        assert_eq!(sector.capacity(), 19);
 
         assert!(sector.push(3));
-        assert_eq!(sector.get_cap(), 19);
+        assert_eq!(sector.capacity(), 19);
 
         assert!(sector.push(4));
-        assert_eq!(sector.get_cap(), 19);
+        assert_eq!(sector.capacity(), 19);
 
         assert!(sector.push(5));
-        assert_eq!(sector.get_cap(), 19);
+        assert_eq!(sector.capacity(), 19);
 
         assert!(sector.push(6));
-        assert_eq!(sector.get_cap(), 19);
+        assert_eq!(sector.capacity(), 19);
 
         assert!(sector.push(7));
-        assert_eq!(sector.get_cap(), 19);
+        assert_eq!(sector.capacity(), 19);
 
         assert!(sector.push(8));
-        assert_eq!(sector.get_cap(), 19);
+        assert_eq!(sector.capacity(), 19);
 
         assert!(sector.push(9));
-        assert_eq!(sector.get_cap(), 19);
+        assert_eq!(sector.capacity(), 19);
 
         repeat!(assert!(sector.push(10)), 10);
-        assert_eq!(sector.get_cap(), 19);
+        assert_eq!(sector.capacity(), 19);
 
         // Should now allow pushing -> Cap reached
         repeat!(assert!(!sector.push(10)), 10);
@@ -726,14 +726,14 @@ mod tests {
             assert!(sector.push(ZeroSizedType));
         }
 
-        assert_eq!(sector.get_len(), 100);
-        assert!(sector.get_cap() == !0);
+        assert_eq!(sector.len(), 100);
+        assert!(sector.capacity() == !0);
     }
 
     #[test]
     fn test_behaviour_shrink_1() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(1000);
-        assert_eq!(sector.get_cap(), 1000);
+        assert_eq!(sector.capacity(), 1000);
 
         repeat!(assert!(sector.push(1)), 100);
 
@@ -755,7 +755,7 @@ mod tests {
 
         repeat!(assert!(sector.push(10)), 100);
 
-        assert_eq!(sector.get_cap(), 1000);
+        assert_eq!(sector.capacity(), 1000);
 
         sector.pop();
         sector.pop();
@@ -764,17 +764,17 @@ mod tests {
         sector.pop();
 
         repeat!(sector.pop(), 994);
-        assert_eq!(sector.get_cap(), 1000);
+        assert_eq!(sector.capacity(), 1000);
 
         sector.pop();
-        assert_eq!(sector.get_cap(), 1000);
-        assert_eq!(sector.get_len(), 0)
+        assert_eq!(sector.capacity(), 1000);
+        assert_eq!(sector.len(), 0)
     }
 
     #[test]
     fn test_behaviour_shrink_2() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(1000);
-        assert_eq!(sector.get_cap(), 1000);
+        assert_eq!(sector.capacity(), 1000);
 
         repeat!(assert!(sector.push(1)), 100);
 
@@ -796,47 +796,47 @@ mod tests {
 
         repeat!(assert!(sector.push(10)), 100);
 
-        assert_eq!(sector.get_cap(), 1000);
+        assert_eq!(sector.capacity(), 1000);
 
         assert_eq!(sector.shrink(100), 100);
 
-        assert_eq!(sector.get_cap(), 900);
+        assert_eq!(sector.capacity(), 900);
 
         assert_eq!(sector.shrink(100), 100);
 
-        assert_eq!(sector.get_cap(), 800);
+        assert_eq!(sector.capacity(), 800);
 
         assert_eq!(sector.shrink(100), 100);
 
-        assert_eq!(sector.get_cap(), 700);
+        assert_eq!(sector.capacity(), 700);
 
         assert_eq!(sector.shrink(100), 100);
 
-        assert_eq!(sector.get_cap(), 600);
+        assert_eq!(sector.capacity(), 600);
 
         assert_eq!(sector.shrink(100), 100);
 
-        assert_eq!(sector.get_cap(), 500);
+        assert_eq!(sector.capacity(), 500);
 
         assert_eq!(sector.shrink(100), 100);
 
-        assert_eq!(sector.get_cap(), 400);
+        assert_eq!(sector.capacity(), 400);
 
         assert_eq!(sector.shrink(100), 100);
 
-        assert_eq!(sector.get_cap(), 300);
+        assert_eq!(sector.capacity(), 300);
 
         assert_eq!(sector.shrink(100), 100);
 
-        assert_eq!(sector.get_cap(), 200);
+        assert_eq!(sector.capacity(), 200);
 
         assert_eq!(sector.shrink(100), 100);
 
-        assert_eq!(sector.get_cap(), 100);
+        assert_eq!(sector.capacity(), 100);
 
         assert_eq!(sector.shrink(100), 100);
 
-        assert_eq!(sector.get_cap(), 0);
+        assert_eq!(sector.capacity(), 0);
 
         assert_eq!(sector.shrink(100), 0);
     }
@@ -844,7 +844,7 @@ mod tests {
     #[test]
     fn test_behaviour_shrink_3() {
         let mut sector: Sector<Manual, i32> = Sector::new();
-        assert_eq!(sector.get_cap(), 0);
+        assert_eq!(sector.capacity(), 0);
 
         assert_eq!(sector.shrink(100), 0);
         assert_eq!(sector.shrink(1000), 0);
@@ -863,6 +863,6 @@ mod tests {
         assert!(!sector.push(1));
         assert!(!sector.push(1));
 
-        assert_eq!(sector.get_cap(), 0);
+        assert_eq!(sector.capacity(), 0);
     }
 }

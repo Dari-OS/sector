@@ -15,7 +15,7 @@ impl crate::components::DefaultDrain for Locked {}
 
 impl<T> Ptr<T> for Sector<Locked, T> {
     fn __ptr(&self) -> NonNull<T> {
-        unsafe { self.get_ptr() }
+        unsafe { self.as_ptr() }
     }
 
     fn __ptr_set(&mut self, new_ptr: NonNull<T>) {
@@ -25,7 +25,7 @@ impl<T> Ptr<T> for Sector<Locked, T> {
 
 impl<T> Len for Sector<Locked, T> {
     fn __len(&self) -> usize {
-        self.get_len()
+        self.len()
     }
 
     fn __len_set(&mut self, new_len: usize) {
@@ -35,11 +35,11 @@ impl<T> Len for Sector<Locked, T> {
 
 impl<T> Cap for Sector<Locked, T> {
     fn __cap(&self) -> usize {
-        self.get_cap()
+        self.capacity()
     }
 
     fn __cap_set(&mut self, new_cap: usize) {
-        unsafe { self.set_cap(new_cap) };
+        unsafe { self.set_capacity(new_cap) };
     }
 }
 

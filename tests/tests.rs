@@ -23,3 +23,15 @@ fn test_len_empty() {
 
     assert_eq!(0, sec.len())
 }
+
+#[test]
+fn test_len_empty_zst() {
+    let sec = Sector::<Normal, ()>::new();
+
+    assert_eq!(0, sec.len())
+}
+
+#[test]
+fn test_cap() {
+    let sec = Sector::<Normal, i32>::new();
+}

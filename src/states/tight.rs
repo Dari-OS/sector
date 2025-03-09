@@ -46,7 +46,7 @@ impl<T> Sector<Tight, T> {
 
 impl<T> Ptr<T> for Sector<Tight, T> {
     fn __ptr(&self) -> NonNull<T> {
-        unsafe { self.get_ptr() }
+        unsafe { self.as_ptr() }
     }
 
     fn __ptr_set(&mut self, new_ptr: NonNull<T>) {
@@ -56,7 +56,7 @@ impl<T> Ptr<T> for Sector<Tight, T> {
 
 impl<T> Len for Sector<Tight, T> {
     fn __len(&self) -> usize {
-        self.get_len()
+        self.len()
     }
 
     fn __len_set(&mut self, new_len: usize) {
@@ -66,17 +66,17 @@ impl<T> Len for Sector<Tight, T> {
 
 impl<T> Cap for Sector<Tight, T> {
     fn __cap(&self) -> usize {
-        self.get_cap()
+        self.capacity()
     }
 
     fn __cap_set(&mut self, new_cap: usize) {
-        unsafe { self.set_cap(new_cap) };
+        unsafe { self.set_capacity(new_cap) };
     }
 }
 
 unsafe impl<T> Grow<T> for Sector<Tight, T> {
     unsafe fn __grow(&mut self, old_len: usize, new_len: usize) {
-        if old_len == self.get_cap() {
+        if old_len == self.capacity() {
             self.__grow_manually_unchecked(new_len - old_len);
         }
     }
@@ -251,8 +251,8 @@ mod tests {
             sector.push(i);
         }
 
-        assert_eq!(sector.get_len(), 100);
-        assert!(sector.get_cap() >= 100);
+        assert_eq!(sector.len(), 100);
+        assert!(sector.capacity() >= 100);
     }
 
     #[test]
@@ -263,8 +263,8 @@ mod tests {
             sector.push(ZeroSizedType);
         }
 
-        assert_eq!(sector.get_len(), 100);
-        assert!(sector.get_cap() >= 100);
+        assert_eq!(sector.len(), 100);
+        assert!(sector.capacity() >= 100);
     }
 
     #[test]
@@ -595,43 +595,43 @@ mod tests {
     #[test]
     fn test_behaviour_grow() {
         let mut sector: Sector<Tight, i32> = Sector::new();
-        assert_eq!(sector.get_cap(), 0);
+        assert_eq!(sector.capacity(), 0);
 
         sector.push(1);
-        assert_eq!(sector.get_cap(), 1);
+        assert_eq!(sector.capacity(), 1);
 
         sector.push(2);
-        assert_eq!(sector.get_cap(), 2);
+        assert_eq!(sector.capacity(), 2);
 
         sector.push(3);
-        assert_eq!(sector.get_cap(), 3);
+        assert_eq!(sector.capacity(), 3);
 
         sector.push(4);
-        assert_eq!(sector.get_cap(), 4);
+        assert_eq!(sector.capacity(), 4);
 
         sector.push(5);
-        assert_eq!(sector.get_cap(), 5);
+        assert_eq!(sector.capacity(), 5);
 
         sector.push(6);
-        assert_eq!(sector.get_cap(), 6);
+        assert_eq!(sector.capacity(), 6);
 
         sector.push(7);
-        assert_eq!(sector.get_cap(), 7);
+        assert_eq!(sector.capacity(), 7);
 
         sector.push(8);
-        assert_eq!(sector.get_cap(), 8);
+        assert_eq!(sector.capacity(), 8);
 
         sector.push(9);
-        assert_eq!(sector.get_cap(), 9);
+        assert_eq!(sector.capacity(), 9);
 
         repeat!(sector.push(10), 10);
-        assert_eq!(sector.get_cap(), 19);
+        assert_eq!(sector.capacity(), 19);
     }
 
     #[test]
     fn test_behaviour_shrink() {
         let mut sector: Sector<Tight, i32> = Sector::new();
-        assert_eq!(sector.get_cap(), 0);
+        assert_eq!(sector.capacity(), 0);
 
         repeat!(sector.push(1), 100);
 
@@ -653,23 +653,23 @@ mod tests {
 
         repeat!(sector.push(10), 100);
 
-        assert_eq!(sector.get_cap(), 1000);
+        assert_eq!(sector.capacity(), 1000);
 
         sector.pop();
-        assert_eq!(sector.get_cap(), 999);
+        assert_eq!(sector.capacity(), 999);
         sector.pop();
-        assert_eq!(sector.get_cap(), 998);
+        assert_eq!(sector.capacity(), 998);
         sector.pop();
-        assert_eq!(sector.get_cap(), 997);
+        assert_eq!(sector.capacity(), 997);
         sector.pop();
-        assert_eq!(sector.get_cap(), 996);
+        assert_eq!(sector.capacity(), 996);
         sector.pop();
-        assert_eq!(sector.get_cap(), 995);
+        assert_eq!(sector.capacity(), 995);
 
         repeat!(sector.pop(), 994);
-        assert_eq!(sector.get_cap(), 1);
+        assert_eq!(sector.capacity(), 1);
 
         sector.pop();
-        assert_eq!(sector.get_cap(), 0);
+        assert_eq!(sector.capacity(), 0);
     }
 }

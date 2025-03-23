@@ -1,7 +1,7 @@
 [package]
 name = "sector"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 edition = "2021"
 
 [dependencies]
-try_reserve = "0.1.1"
+try_reserve = "0.1.3"

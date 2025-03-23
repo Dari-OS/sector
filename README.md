@@ -5,7 +5,8 @@ A **stateful vector implementation** that provides customizable memory managemen
 ![Rust](https://img.shields.io/badge/Rust-1.70%2B-orange)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE-MIT)
 [![Apache 2.0](https://img.shields.io/badge/License-APACHE%202.0-blue.svg)](./LICENSE-MIT)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/Dari-OS/sector/ci.yml?branch=main)](https://github.com/Dari-OS/sector/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/Dari-OS/sector/.github%2Fworkflows%2Frust.yml
+)](https://github.com/Dari-OS/sector/actions)
 
 ---
 

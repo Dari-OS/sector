@@ -15,8 +15,6 @@ A **stateful vector implementation** that provides customizable memory managemen
 - [Features](#features)
 - [States](#states)
 - [Usage](#usage)
-- [Core Components](#core-components)
-- [Examples](#examples)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
 - [Roadmap](#roadmap)

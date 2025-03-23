@@ -1,6 +1,6 @@
 # sector
 
-A **stateful vector implementation** that provides customizable memory management behaviors through Rust traits and state machines.
+A **stateful vector implementation** that provides different memory management behaviors through Rust traits and state machines.
 
 ![Rust](https://img.shields.io/badge/Rust-1.70%2B-orange)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE-MIT)

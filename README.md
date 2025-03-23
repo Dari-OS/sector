@@ -43,7 +43,7 @@ Unlike `Vec<T>`, it allows developers to control how memory grows/shrinks.
 Sector has 6 different states:
 
 - [`Normal`] Acts like the normal `std::vec::Vec<T>`.
-- [`Dynamic`] Grows the internal capacity by a factor of 2.
+- [`Dynamic`] Grows the internal capacity by a factor of 2. Shrinks to 3/4 of the original capacity
 - [`Fixed`] Is not able to grow nor shrink. Returns `false` if the capacity is full and you try to add elements.
 - [`Locked`] Does not allow to add or remove elements, regardless of the inner capacity.
 - [`Manual`] Requires you to grow and shrink the inner capacity manually.

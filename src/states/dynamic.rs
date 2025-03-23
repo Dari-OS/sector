@@ -77,7 +77,7 @@ impl<T> Cap for Sector<Dynamic, T> {
 unsafe impl<T> Grow<T> for Sector<Dynamic, T> {
     unsafe fn __grow(&mut self, old_len: usize, new_len: usize) {
         // Checks if we need to grow
-        if old_len == self.capacity() {
+        if old_len == self.capacity() && size_of::<T>() != 0 {
             // Grow multiple times if more then one element was pushed
             loop {
                 self.__grow_manually_unchecked(if old_len == 0 { 1 } else { old_len });
@@ -90,10 +90,23 @@ unsafe impl<T> Grow<T> for Sector<Dynamic, T> {
     }
 }
 
-/// TODO Document how the simple shrink algo works
+/// # Algorithm
+///
+/// Shrinks as long as the `cap` is larger or equal to 4
+/// The capacity gets shrunk to 3/4 + the elements not dividable by 4
+///
+/// ## Example
+///
+/// The Capacity was 43 and is 11 now.
+///
+///  - 43 % 4 = 3 // The num that get's "lost" when dividing with 4
+///  - 43 / 4 * 3 = 30 // 3 quarter of the capacity
+///  - 3 + 30 = __33__ // 3 quarter plus the lost cap = new cap
+///
+///
 unsafe impl<T> Shrink<T> for Sector<Dynamic, T> {
     unsafe fn __shrink(&mut self, _: usize, new_len: usize) {
-        if new_len == self.__cap() / 2 && self.__cap() >= 4 {
+        if new_len <= self.__cap() / 2 && self.__cap() >= 4 && size_of::<T>() != 0 {
             let factor_to_add = self.__cap() % 4;
             let new_cap = self.__cap() / 4 * 3 + factor_to_add;
             self.__shrink_manually_unchecked(self.__cap() - new_cap);

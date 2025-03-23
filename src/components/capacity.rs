@@ -1,9 +1,10 @@
 /// **Trait `Cap`**
 ///
-/// Provides an interface to track capacity of allocated memory.
+/// Provides an interface to track the capacity of allocated memory.
 ///
-/// - `__cap()` - Gets the current capacity.
-/// - `__cap_set(cap)` - Sets the capacity.
+/// # Methods
+/// - `__cap()` - Retrieves the current capacity.
+/// - `__cap_set(cap)` - Updates the capacity.
 pub trait Cap {
     /// Returns the current capacity.
     fn __cap(&self) -> usize;
@@ -11,7 +12,6 @@ pub trait Cap {
     /// Sets the capacity to a new value.
     ///
     /// # Arguments
-    ///
     /// * `new_cap` - The new capacity.
     fn __cap_set(&mut self, new_cap: usize);
 }

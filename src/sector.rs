@@ -166,9 +166,6 @@ impl<T> RawSec<T> {
     /// # Aborts
     ///
     /// Aborts if a allocation error occures
-    // TODO: Look into returning `TryReserverError`.
-    // Currently not possible because of the unstable status of `TryReserverErrorKind`
-    // See: https://github.com/rust-lang/rust/issues/48043
     fn create_ptr(initial_capacity: Option<usize>) -> Result<(NonNull<T>, usize), TryReserveError> {
         let capacity = initial_capacity.unwrap_or_default();
         if size_of::<T>() == 0 {

@@ -1,5 +1,21 @@
+#[cfg(feature = "std")]
 use std::{
     alloc::{self, Layout},
+    marker::PhantomData,
+    mem,
+    ops::{Deref, DerefMut},
+    ptr::{self, NonNull},
+    slice,
+};
+
+#[cfg(not(feature = "std"))]
+extern crate alloc as other_alloc;
+
+#[cfg(not(feature = "std"))]
+use other_alloc::alloc::{self, Layout};
+
+#[cfg(not(feature = "std"))]
+use core::{
     marker::PhantomData,
     mem,
     ops::{Deref, DerefMut},

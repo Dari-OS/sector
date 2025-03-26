@@ -10,6 +10,9 @@ license = "MIT OR Apache-2.0"
 categories = ["rust-patterns", "algorithms", "data-structures"]
 keywords = ["collection", "array", "vector", "data-structure", "sector"]
 
+[features]
+default = []
+std = ["try_reserve/std"]
 
 [dependencies]
-try_reserve = "0.1.3"
+try_reserve = "0.2.0"

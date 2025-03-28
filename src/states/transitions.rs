@@ -3,11 +3,11 @@ use crate::Sector;
 impl<T, State> Sector<State, T> {
     pub fn to_custom<Target>(self) -> Sector<Target, T> {
         let new_sector = Sector {
-            buf: unsafe { std::ptr::read(&self.buf) },
+            buf: unsafe { core::ptr::read(&self.buf) },
             len: self.len,
-            _state: std::marker::PhantomData,
+            _state: core::marker::PhantomData,
         };
-        std::mem::forget(self);
+        core::mem::forget(self);
         new_sector
     }
 }

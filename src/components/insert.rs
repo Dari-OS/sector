@@ -1,4 +1,4 @@
-use std::ptr;
+use core::ptr;
 
 use super::{Cap, Grow, Len, Ptr};
 

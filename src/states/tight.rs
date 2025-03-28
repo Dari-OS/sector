@@ -1,4 +1,4 @@
-use std::ptr::NonNull;
+use core::ptr::NonNull;
 
 use crate::components::{Cap, Grow, Index, Insert, Len, Pop, Ptr, Push, Remove, Shrink};
 
@@ -577,7 +577,7 @@ mod tests {
 
     #[test]
     fn test_drain_drop() {
-        let counter = std::cell::Cell::new(0);
+        let counter = core::cell::Cell::new(0);
         {
             let mut sector: Sector<Tight, DropCounter> = Sector::new();
             for _ in 0..5 {

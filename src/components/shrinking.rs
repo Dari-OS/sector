@@ -1,6 +1,12 @@
-use std::alloc;
-use std::{alloc::Layout, mem, ptr::NonNull};
+use core::{alloc::Layout, mem, ptr::NonNull};
 
+#[cfg(feature = "std")]
+use std::alloc;
+
+#[cfg(not(feature = "std"))]
+extern crate alloc as no_std_alloc;
+#[cfg(not(feature = "std"))]
+use no_std_alloc::alloc;
 use try_reserve::error::{TryReserveError, TryReserveErrorKind};
 
 use super::{Cap, Ptr};

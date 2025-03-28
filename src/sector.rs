@@ -1,27 +1,20 @@
-#[cfg(feature = "std")]
-use std::{
-    alloc::{self, Layout},
-    marker::PhantomData,
-    mem,
-    ops::{Deref, DerefMut},
-    ptr::{self, NonNull},
-    slice,
-};
-
-#[cfg(not(feature = "std"))]
-extern crate alloc as other_alloc;
-
-#[cfg(not(feature = "std"))]
-use other_alloc::alloc::{self, Layout};
-
-#[cfg(not(feature = "std"))]
 use core::{
+    alloc::Layout,
     marker::PhantomData,
     mem,
     ops::{Deref, DerefMut},
     ptr::{self, NonNull},
     slice,
 };
+
+#[cfg(feature = "std")]
+use std::alloc;
+
+#[cfg(not(feature = "std"))]
+extern crate alloc as no_std_alloc;
+
+#[cfg(not(feature = "std"))]
+use no_std_alloc::alloc;
 
 use try_reserve::error::TryReserveError;
 

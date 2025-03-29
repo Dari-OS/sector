@@ -54,12 +54,12 @@ Sector has 6 different states:
 > [**Zero Sized**](https://doc.rust-lang.org/nomicon/exotic-sizes.html) Types are treated differently by each state.
 > Refer to the specific documentation of each state to get more information.
 
-[`Normal`]: ./src/states/normal.rs#L7
-[`Dynamic`]: ./src/states/dynamic.rs#L23
-[`Fixed`]: ./src/states/fixed.rs#L28
-[`Locked`]: ./src/states/locked.rs#L22
-[`Manual`]: ./src/states/manual.rs#L18
-[`Tight`]: ./src/states/tight.rs#L23
+[`Normal`]: ./src/states/normal.rs
+[`Dynamic`]: ./src/states/dynamic.rs
+[`Fixed`]: ./src/states/fixed.rs
+[`Locked`]: ./src/states/locked.rs
+[`Manual`]: ./src/states/manual.rs
+[`Tight`]: ./src/states/tight.rs
 
 ## Usage
 

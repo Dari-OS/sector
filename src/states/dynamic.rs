@@ -1,32 +1,88 @@
+//! # Dynamic State
+//!
+//! The `Dynamic` state dynamically adjusts its capacity.
+//! Its behavior is governed by growth and shrink factors,
+//! ensuring that the container grows when needed and shrinks to save memory when possible.
+//!
+//! ## Overview
+//!
+//! The state machine is implemented through a series of traits that define how the container:
+//!  - **Push/Pop/Insert/Remove:** Manipulate the element list.
+//!  - **Pointer and Length Management (Ptr, Len):** Handle the raw pointer and current length.
+//!  - **Capacity Management (Cap):** Get and set the underlying allocation capacity.
+//!  - **Dynamic Growth (Grow):** Increase capacity when the current storage is full.
+//!  - **Dynamic Shrink (Shrink):** Reduce capacity when the number of elements drops significantly.
+//!
+//! The growth strategy attempts to double (or more) the capacity when full, while the shrink strategy
+//! reduces capacity to roughly 75% of its current value (with a small adjustment) when usage falls
+//! below half capacity.
+
 use core::ptr::NonNull;
 
 use crate::components::{Cap, Grow, Index, Insert, Len, Pop, Ptr, Push, Remove, Shrink};
 
 use crate::Sector;
 
+/// The marker type that indicates a dynamic state for a Sector.
+///
+/// In this state, the sector is implemented as a dynamically resizing vector. The dynamic behavior
+/// includes growing the allocation when the number of elements reaches the current capacity, and
+/// shrinking the allocation when a significant number of elements are removed. The resizing factors
+/// are determined by the following rules:
+///
+/// - **Growth:** When pushing elements and the current length equals the capacity, the sector will
+///   grow its allocation. The new capacity is increased iteratively until it can accommodate the
+///   new length. The growth factor is determined by a manual unchecked growth function that
+///   typically doubles (or follows a similar pattern) the capacity.
+/// - **Shrinkage:** When the sector’s length falls to or below half of its capacity, and the capacity
+///   is at least 4, the capacity is reduced. The new capacity is calculated as three-quarters of the
+///   old capacity plus a remainder (the modulus of the old capacity by 4). This approach helps to
+///   prevent excessive allocation while ensuring a smooth transition when elements are removed.
+///
+/// This state is intended for use cases where the number of elements is expected to vary significantly.
 pub struct Dynamic;
 
+// Provide default iterator and drain behavior.
 impl crate::components::DefaultIter for Dynamic {}
-
 impl crate::components::DefaultDrain for Dynamic {}
 
 impl<T> Sector<Dynamic, T> {
+    /// Appends an element to the end of the sector.
+    ///
+    /// # Behavior
+    ///
+    /// If the current number of elements equals the capacity, the sector will attempt to grow
+    /// its storage before inserting the new element.
     pub fn push(&mut self, elem: T) {
         self.__push(elem);
     }
 
+    /// Removes the last element from the sector and returns it.
+    ///
+    /// Returns `None` if the sector is empty.
     pub fn pop(&mut self) -> Option<T> {
         self.__pop()
     }
 
+    /// Inserts an element at the specified index, shifting all elements after it to the right.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is greater than the current length.
     pub fn insert(&mut self, index: usize, elem: T) {
         self.__insert(index, elem);
     }
 
+    /// Removes the element at the specified index and returns it, shifting all elements after it to the left.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is out of bounds.
     pub fn remove(&mut self, index: usize) -> T {
         self.__remove(index)
     }
 
+    /// Returns a reference to the element at the given index if it exists.
     pub fn get(&self, index: usize) -> Option<&T> {
         if index < self.__len() {
             Some(self.__get(index))
@@ -35,6 +91,7 @@ impl<T> Sector<Dynamic, T> {
         }
     }
 
+    /// Returns a mutable reference to the element at the given index if it exists.
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         if index < self.__len() {
             Some(self.__get_mut(index))
@@ -45,44 +102,78 @@ impl<T> Sector<Dynamic, T> {
 }
 
 impl<T> Ptr<T> for Sector<Dynamic, T> {
+    /// Returns the raw pointer to the first element in the sector.
+    ///
+    /// # Safety
+    ///
+    /// The pointer is obtained using an unsafe method which assumes the sector’s storage is valid.
     fn __ptr(&self) -> NonNull<T> {
         unsafe { self.as_ptr() }
     }
 
+    /// Sets the raw pointer of the sector to a new value.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the new pointer is valid for the current sector.
     fn __ptr_set(&mut self, new_ptr: NonNull<T>) {
         unsafe { Sector::set_ptr(self, new_ptr) };
     }
 }
 
 impl<T> Len for Sector<Dynamic, T> {
+    /// Returns the current number of elements in the sector.
     fn __len(&self) -> usize {
         Sector::len(self)
     }
 
+    /// Sets the current number of elements in the sector.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because the new length must not exceed the actual allocation.
     fn __len_set(&mut self, new_len: usize) {
         unsafe { Sector::set_len(self, new_len) };
     }
 }
 
 impl<T> Cap for Sector<Dynamic, T> {
+    /// Returns the current capacity of the sector.
+    ///
+    /// This value indicates how many elements the sector can hold without needing to grow.
     fn __cap(&self) -> usize {
         self.capacity()
     }
 
+    /// Sets a new capacity for the sector.
+    ///
+    /// # Safety
+    ///
+    /// The new capacity must be a valid size for the sector's allocation.
     fn __cap_set(&mut self, new_cap: usize) {
         unsafe { self.set_capacity(new_cap) };
     }
 }
 
+/// Implements the dynamic growth behavior.
+///
+/// When adding new elements causes the sector's length to equal its capacity, this method is
+/// invoked to allocate a larger block of memory. The growth is done iteratively until the capacity
+/// meets or exceeds the new required length.
+///
+/// # Safety
+///
+/// The function uses unchecked growth operations. The caller must ensure that the operations
+/// do not violate memory safety.
 unsafe impl<T> Grow<T> for Sector<Dynamic, T> {
     unsafe fn __grow(&mut self, old_len: usize, new_len: usize) {
-        // Checks if we need to grow
+        // Check if growth is needed: only when old_len equals current capacity and T is non-zero sized.
         if old_len == self.capacity() && size_of::<T>() != 0 {
-            // Grow multiple times if more then one element was pushed
+            // Grow repeatedly if more than one element was pushed and the new length is not reached yet.
             loop {
                 self.__grow_manually_unchecked(if old_len == 0 { 1 } else { old_len });
                 if self.__cap() >= new_len {
-                    // Stops growing if we did grow enough
+                    // Stop once the capacity meets or exceeds the new required length.
                     break;
                 }
             }
@@ -90,20 +181,27 @@ unsafe impl<T> Grow<T> for Sector<Dynamic, T> {
     }
 }
 
+/// Implements the dynamic shrink behavior.
+///
 /// # Algorithm
 ///
-/// Shrinks as long as the `cap` is larger or equal to 4
-/// The capacity gets shrunk to 3/4 + the elements not dividable by 4
+/// The algorithm attempts to shrink the sector when its length is less than or equal to half of
+/// its capacity. This is done only if the current capacity is at least 4 and the type is non-zero
+/// sized. The new capacity is computed as follows:
 ///
-/// ## Example
+/// 1. Compute the remainder when dividing the current capacity by 4.
+/// 2. Calculate three-quarters of the current capacity (integer division) and add the remainder.
+/// 3. The new capacity is the sum of the above two numbers.
 ///
-/// The Capacity was 43 and is 11 now.
+/// For example, if the capacity was 43:
+///  - 43 % 4 = 3 (lost when dividing)
+///  - 43 / 4 * 3 = 30 (three quarters of the capacity)
+///  - New capacity = 30 + 3 = 33
 ///
-///  - 43 % 4 = 3 // The num that get's "lost" when dividing with 4
-///  - 43 / 4 * 3 = 30 // 3 quarter of the capacity
-///  - 3 + 30 = __33__ // 3 quarter plus the lost cap = new cap
+/// # Safety
 ///
-///
+/// The shrink operation is performed using unchecked operations. The caller must ensure that the
+/// new capacity is valid and that no memory safety issues arise.
 unsafe impl<T> Shrink<T> for Sector<Dynamic, T> {
     unsafe fn __shrink(&mut self, _: usize, new_len: usize) {
         if new_len <= self.__cap() / 2 && self.__cap() >= 4 && size_of::<T>() != 0 {
@@ -114,6 +212,9 @@ unsafe impl<T> Shrink<T> for Sector<Dynamic, T> {
     }
 }
 
+// The following trait provides additional functionallity based on the grow/shrink
+// implementations
+// It also serves to mark the available operations on the sector.
 impl<T> Push<T> for Sector<Dynamic, T> {}
 impl<T> Pop<T> for Sector<Dynamic, T> {}
 impl<T> Insert<T> for Sector<Dynamic, T> {}

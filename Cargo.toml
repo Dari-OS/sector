@@ -11,7 +11,6 @@ categories = ["rust-patterns", "algorithms", "data-structures"]
 keywords = ["collection", "array", "vector", "data-structure", "sector"]
 
 [features]
-default = ["std"]
 std = ["try_reserve/std"]
 
 [dependencies]

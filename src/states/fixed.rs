@@ -1,16 +1,31 @@
-// TODO: Discuss how to resolve the conflict with zst
-//       If the user has an ZST as type and creates a sector
-//       with capacity 5 (just an arbitrary number) he is able
-//       to insert/push how ofter he wants because ZSTs set the cap
-//       to its max. This pretty much contradicts the entire purpose
-//       of the `Fixed` state.
-
+//! # Fixed Sector State
+//!
+//! The `Fixed` state indicates that the sector has a fixed capacity which does not change once set.
+//! This means that operations which would normally trigger a reallocation (growth or shrink) are disabled.
+//!
+//! In this state, the methods `push` and `insert` will only add an element if there is remaining capacity.
+//! They return a boolean value indicating success (`true`) or failure (`false`), depending on whether
+//! the operation could be performed without exceeding the fixed capacity.
+//!
+//! **Note:** There is a known conflict with zero-sized types (ZST). When using a ZST as the element type,
+//! a sector with a fixed capacity (e.g., 5) might allow unlimited insertions because ZSTs treat capacity
+//! as maximal. This behavior contradicts the intended fixed capacity semantics and is subject to further discussion.
 use core::ptr::NonNull;
 
 use crate::components::{Cap, Grow, Index, Insert, Len, Pop, Ptr, Push, Remove, Shrink};
 
 use crate::Sector;
 
+/// The `Fixed` state indicates that the sector has a fixed capacity.
+///
+/// In this state, operations that would normally trigger a growth or shrink are disabled.
+/// Instead, insertions (via `push` or `insert`) only succeed if there is enough capacity already.
+///
+/// > **Note:** There is a known conflict with zero-sized types (ZST). If a user creates a sector
+/// > with a fixed capacity (e.g., 5) and uses a ZST as the element type, it is possible to insert or push
+/// > an unlimited number of elements because ZSTs set the capacity to its maximum value. This contradicts
+/// > the intended behavior of a fixed-capacity sector. Further discussion or resolution for this issue
+/// > is needed.
 pub struct Fixed;
 
 impl crate::components::DefaultIter for Fixed {}
@@ -18,44 +33,66 @@ impl crate::components::DefaultIter for Fixed {}
 impl crate::components::DefaultDrain for Fixed {}
 
 impl<T> Sector<Fixed, T> {
-    /// Pushes to the *sector* when there is enoguh capacity
+    /// Attempts to push an element to the sector.
+    ///
+    /// # Behavior
+    ///
+    /// - If the sector has remaining capacity (i.e. current length is less than capacity),
+    ///   the element is pushed and the function returns `true`.
+    /// - If the sector is full (current length equals capacity), no element is pushed and the function returns `false`.
     ///
     /// # Returns
     ///
-    /// `true`  - If pushed successfully
-    /// `false` - If capacity is full (the __elem__ wont get pushed)
+    /// - `true` if the element was successfully pushed.
+    /// - `false` if there was insufficient capacity.
     pub fn push(&mut self, elem: T) -> bool {
         if self.__cap() == self.__len() {
-            return false;
+            false
         } else {
             self.__push(elem);
-            return true;
+            true
         }
     }
 
+    /// Removes the last element from the sector and returns it.
+    ///
+    /// Returns `None` if the sector is empty.
     pub fn pop(&mut self) -> Option<T> {
         self.__pop()
     }
 
-    /// Inserts to the *sector* when there is enoguh capacity
+    /// Attempts to insert an element into the sector at the specified index.
+    ///
+    /// # Behavior
+    ///
+    /// - If there is enough capacity (i.e. current length is less than capacity), the element
+    ///   is inserted at the provided index and the function returns `true`.
+    /// - If the sector is full (current length equals capacity), the insertion is not performed
+    ///   and the function returns `false`.
     ///
     /// # Returns
     ///
-    /// `true`  - If inserted successfully
-    /// `false` - If capacity is full (the __elem__ wont get pushed)
+    /// - `true` if the element was successfully inserted.
+    /// - `false` if there was insufficient capacity.
     pub fn insert(&mut self, index: usize, elem: T) -> bool {
         if self.__cap() == self.__len() {
-            return false;
+            false
         } else {
             self.__insert(index, elem);
-            return true;
+            true
         }
     }
 
+    /// Removes the element at the specified index and returns it, shifting all elements after it to the left.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is out of bounds.
     pub fn remove(&mut self, index: usize) -> T {
         self.__remove(index)
     }
 
+    /// Returns a reference to the element at the given index if it exists.
     pub fn get(&self, index: usize) -> Option<&T> {
         if index < self.__len() {
             Some(self.__get(index))
@@ -64,6 +101,7 @@ impl<T> Sector<Fixed, T> {
         }
     }
 
+    /// Returns a mutable reference to the element at the given index if it exists.
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         if index < self.__len() {
             Some(self.__get_mut(index))
@@ -74,43 +112,76 @@ impl<T> Sector<Fixed, T> {
 }
 
 impl<T> Ptr<T> for Sector<Fixed, T> {
+    /// Returns the raw pointer to the first element in the sector.
+    ///
+    /// # Safety
+    ///
+    /// The pointer is obtained using an unsafe method which assumes the sector’s storage is valid.
     fn __ptr(&self) -> NonNull<T> {
         unsafe { self.as_ptr() }
     }
 
+    /// Sets the raw pointer of the sector to a new value.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the new pointer is valid for the current sector.
     fn __ptr_set(&mut self, new_ptr: NonNull<T>) {
-        unsafe { self.set_ptr(new_ptr) };
+        unsafe { Sector::set_ptr(self, new_ptr) };
     }
 }
 
 impl<T> Len for Sector<Fixed, T> {
+    /// Returns the current number of elements in the sector.
     fn __len(&self) -> usize {
-        self.len()
+        Sector::len(self)
     }
 
+    /// Sets the current number of elements in the sector.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because the new length must not exceed the actual allocation.
     fn __len_set(&mut self, new_len: usize) {
-        unsafe { self.set_len(new_len) };
+        unsafe { Sector::set_len(self, new_len) };
     }
 }
 
 impl<T> Cap for Sector<Fixed, T> {
+    /// Returns the current capacity of the sector.
+    ///
+    /// This value indicates how many elements the sector can hold without needing to grow.
     fn __cap(&self) -> usize {
         self.capacity()
     }
 
+    /// Sets a new capacity for the sector.
+    ///
+    /// # Safety
+    ///
+    /// The new capacity must be a valid size for the sector's allocation.
     fn __cap_set(&mut self, new_cap: usize) {
         unsafe { self.set_capacity(new_cap) };
     }
 }
 
+/// For the `Fixed` state, the sector is not allowed to grow.
+/// This implementation intentionally does nothing.
 unsafe impl<T> Grow<T> for Sector<Fixed, T> {
+    /// Does nothing as the fixed state does not support growth.
     unsafe fn __grow(&mut self, _: usize, _: usize) {}
 }
 
+/// For the `Fixed` state, the sector is not allowed to shrink.
+/// This implementation intentionally does nothing.
 unsafe impl<T> Shrink<T> for Sector<Fixed, T> {
+    /// Does nothing as the fixed state does not support shrinking.
     unsafe fn __shrink(&mut self, _: usize, _: usize) {}
 }
 
+// The following trait provides additional functionallity based on the grow/shrink
+// implementations
+// It also serves to mark the available operations on the sector.
 impl<T> Push<T> for Sector<Fixed, T> {}
 impl<T> Pop<T> for Sector<Fixed, T> {}
 impl<T> Insert<T> for Sector<Fixed, T> {}

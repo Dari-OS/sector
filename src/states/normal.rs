@@ -1,3 +1,20 @@
+//! # Normal Sector State
+//!
+//! The `Normal` state acts as a standard, dynamically resizing vector similar to Rust’s `Vec<T>`.
+//! It provides typical behaviors for push/pop/insert/remove operations.
+//!
+//! ## Unique Behavior
+//!
+//! - **Growth:**  
+//!   When the sector's length reaches its capacity, the sector automatically grows by repeatedly
+//!   invoking a manual growth operation until the capacity is sufficient for the new length.
+//!   The growth increment is determined by the current length (or `1` if the sector is empty).
+//!
+//! - **Shrink:**  
+//!   Unlike growth, the `Normal` state does not implement any shrinking behavior. Once the sector
+//!   grows, its capacity remains until further growth is needed.
+//!
+//! All other operations behave similarly to those in a standard vector.
 use core::ptr::NonNull;
 
 use crate::components::{Cap, Grow, Index, Insert, Len, Pop, Ptr, Push, Remove, Shrink};
@@ -11,22 +28,42 @@ impl crate::components::DefaultIter for Normal {}
 impl crate::components::DefaultDrain for Normal {}
 /// Acts as the normal Vector from std
 impl<T> Sector<Normal, T> {
+    /// Appends an element to the end of the sector.
+    ///
+    /// # Behavior
+    ///
+    /// If the current number of elements equals the capacity, the sector will attempt to grow
+    /// its storage before inserting the new element.
     pub fn push(&mut self, elem: T) {
         self.__push(elem);
     }
 
+    /// Removes the last element from the sector and returns it.
+    ///
+    /// Returns `None` if the sector is empty.
     pub fn pop(&mut self) -> Option<T> {
         self.__pop()
     }
 
+    /// Inserts an element at the specified index, shifting all elements after it to the right.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is greater than the current length.
     pub fn insert(&mut self, index: usize, elem: T) {
         self.__insert(index, elem);
     }
 
+    /// Removes the element at the specified index and returns it, shifting all elements after it to the left.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is out of bounds.
     pub fn remove(&mut self, index: usize) -> T {
         self.__remove(index)
     }
 
+    /// Returns a reference to the element at the given index if it exists.
     pub fn get(&self, index: usize) -> Option<&T> {
         if index < self.__len() {
             Some(self.__get(index))
@@ -35,6 +72,7 @@ impl<T> Sector<Normal, T> {
         }
     }
 
+    /// Returns a mutable reference to the element at the given index if it exists.
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         if index < self.__len() {
             Some(self.__get_mut(index))
@@ -45,35 +83,64 @@ impl<T> Sector<Normal, T> {
 }
 
 impl<T> Ptr<T> for Sector<Normal, T> {
+    /// Returns the raw pointer to the first element in the sector.
+    ///
+    /// # Safety
+    ///
+    /// The pointer is obtained using an unsafe method which assumes the sector’s storage is valid.
     fn __ptr(&self) -> NonNull<T> {
         unsafe { self.as_ptr() }
     }
 
+    /// Sets the raw pointer of the sector to a new value.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the new pointer is valid for the current sector.
     fn __ptr_set(&mut self, new_ptr: NonNull<T>) {
-        unsafe { self.set_ptr(new_ptr) };
+        unsafe { Sector::set_ptr(self, new_ptr) };
     }
 }
 
 impl<T> Len for Sector<Normal, T> {
+    /// Returns the current number of elements in the sector.
     fn __len(&self) -> usize {
-        self.len()
+        Sector::len(self)
     }
 
+    /// Sets the current number of elements in the sector.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because the new length must not exceed the actual allocation.
     fn __len_set(&mut self, new_len: usize) {
-        unsafe { self.set_len(new_len) };
+        unsafe { Sector::set_len(self, new_len) };
     }
 }
 
 impl<T> Cap for Sector<Normal, T> {
+    /// Returns the current capacity of the sector.
+    ///
+    /// This value indicates how many elements the sector can hold without needing to grow.
     fn __cap(&self) -> usize {
         self.capacity()
     }
 
+    /// Sets a new capacity for the sector.
+    ///
+    /// # Safety
+    ///
+    /// The new capacity must be a valid size for the sector's allocation.
     fn __cap_set(&mut self, new_cap: usize) {
         unsafe { self.set_capacity(new_cap) };
     }
 }
 
+/// Implements growth behavior for the `Normal` state.
+///
+/// When the current length equals the capacity and a growth is required, the sector repeatedly
+/// increases its capacity by calling the manual growth function until the capacity is sufficient
+/// for the new length.
 unsafe impl<T> Grow<T> for Sector<Normal, T> {
     unsafe fn __grow(&mut self, old_len: usize, new_len: usize) {
         if old_len == self.capacity() && size_of::<T>() != 0 {
@@ -87,11 +154,15 @@ unsafe impl<T> Grow<T> for Sector<Normal, T> {
     }
 }
 
+/// No shrinking behavior is implemented for the `Normal` state.
 unsafe impl<T> Shrink<T> for Sector<Normal, T> {
-    // No shrinking behaviour for the Normal vec
+    // No shrinking behaviour in the Normal vec
     unsafe fn __shrink(&mut self, _: usize, _: usize) {}
 }
 
+// The following trait provides additional functionallity based on the grow/shrink
+// implementations
+// It also serves to mark the available operations on the sector.
 impl<T> Push<T> for Sector<Normal, T> {}
 impl<T> Pop<T> for Sector<Normal, T> {}
 impl<T> Insert<T> for Sector<Normal, T> {}

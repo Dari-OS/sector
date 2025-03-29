@@ -36,7 +36,7 @@ Unlike `Vec<T>`, it allows developers to control how memory grows/shrinks.
 
 - [x] **Lightweight & Fast** – Minimal overhead while allowing full customization.
 
-- [x] **No Std Support ~(Planned)~** – Support for `#![no_std]` environments by default.
+- [x] **No Std Support** – Support for `#![no_std]` environments by default.
 
 ## States
 
@@ -52,7 +52,7 @@ Sector has 6 different states:
 > [!WARNING]
 > Be careful!
 > [**Zero Sized**](https://doc.rust-lang.org/nomicon/exotic-sizes.html) Types are treated differently by each state.
-> Refer to the specific documentation of each state
+> Refer to the specific documentation of each state to get more information.
 
 [`Normal`]: ./src/states/normal.rs#L7
 [`Dynamic`]: ./src/states/dynamic.rs#L7

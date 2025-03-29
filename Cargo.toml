@@ -1,6 +1,6 @@
 [package]
 name = "sector"
-version = "0.1.0-alpha.1"
+version = "0.1.0"
 edition = "2021"
 authors = ["Dari-OS <darius.dev@proton.me>"]
 description = "A stateful vector implementation that provides different memory management behaviors through Rust traits and state machines."
@@ -10,6 +10,8 @@ license = "MIT OR Apache-2.0"
 categories = ["rust-patterns", "algorithms", "data-structures"]
 keywords = ["collection", "array", "vector", "data-structure", "sector"]
 
+[features]
+std = ["try_reserve/std"]
 
 [dependencies]
-try_reserve = "0.1.3"
+try_reserve = "0.2.0"

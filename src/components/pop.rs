@@ -1,4 +1,4 @@
-use std::ptr;
+use core::ptr;
 
 use super::{Cap, Len, Ptr, Shrink};
 
@@ -20,7 +20,7 @@ pub trait Pop<T>: Cap + Len + Ptr<T> + Shrink<T> {
         } else {
             self.__len_set(len - 1);
             let return_value = Some(unsafe { ptr::read(self.__ptr().as_ptr().add(len - 1)) });
-            unsafe { self.__shrink(len, len-1) };
+            unsafe { self.__shrink(len, len - 1) };
             return_value
         }
     }

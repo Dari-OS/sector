@@ -1,4 +1,21 @@
-use std::ptr::NonNull;
+//! # Tight Sector State
+//!
+//! The `Tight` state provides a sector implementation that automatically grows or shrinks
+//! its capacity by exactly the number of elements required. In contrast to other states that may
+//! use multiplicative or fixed reallocation strategies, `Tight` adjusts its allocation
+//! precisely to the difference between the new and current lengths.
+//!
+//! ## Unique Behavior
+//!
+//! - **Automatic Growth:** When the sector's length reaches its capacity and additional elements
+//!   are needed, the sector grows by the exact difference between the new required length and the
+//!   current length. This ensures a minimal reallocation strategy.
+//!
+//! - **Automatic Shrinkage:** When elements are removed and the current length decreases, the sector
+//!   shrinks by the precise number of elements removed, releasing any unneeded capacity.
+//!
+//! All other operations (such as `push`, `pop`, `insert`, and `remove`) behave as in other states.
+use core::ptr::NonNull;
 
 use crate::components::{Cap, Grow, Index, Insert, Len, Pop, Ptr, Push, Remove, Shrink};
 
@@ -11,22 +28,42 @@ impl crate::components::DefaultIter for Tight {}
 impl crate::components::DefaultDrain for Tight {}
 
 impl<T> Sector<Tight, T> {
+    /// Appends an element to the end of the sector.
+    ///
+    /// # Behavior
+    ///
+    /// If the current number of elements equals the capacity, the sector will attempt to grow
+    /// its storage before inserting the new element.
     pub fn push(&mut self, elem: T) {
         self.__push(elem);
     }
 
+    /// Removes the last element from the sector and returns it.
+    ///
+    /// Returns `None` if the sector is empty.
     pub fn pop(&mut self) -> Option<T> {
         self.__pop()
     }
 
+    /// Inserts an element at the specified index, shifting all elements after it to the right.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is greater than the current length.
     pub fn insert(&mut self, index: usize, elem: T) {
         self.__insert(index, elem);
     }
 
+    /// Removes the element at the specified index and returns it, shifting all elements after it to the left.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is out of bounds.
     pub fn remove(&mut self, index: usize) -> T {
         self.__remove(index)
     }
 
+    /// Returns a reference to the element at the given index if it exists.
     pub fn get(&self, index: usize) -> Option<&T> {
         if index < self.__len() {
             Some(self.__get(index))
@@ -35,6 +72,7 @@ impl<T> Sector<Tight, T> {
         }
     }
 
+    /// Returns a mutable reference to the element at the given index if it exists.
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         if index < self.__len() {
             Some(self.__get_mut(index))
@@ -45,35 +83,69 @@ impl<T> Sector<Tight, T> {
 }
 
 impl<T> Ptr<T> for Sector<Tight, T> {
+    /// Returns the raw pointer to the first element in the sector.
+    ///
+    /// # Safety
+    ///
+    /// The pointer is obtained using an unsafe method which assumes the sector’s storage is valid.
     fn __ptr(&self) -> NonNull<T> {
         unsafe { self.as_ptr() }
     }
 
+    /// Sets the raw pointer of the sector to a new value.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the new pointer is valid for the current sector.
     fn __ptr_set(&mut self, new_ptr: NonNull<T>) {
-        unsafe { self.set_ptr(new_ptr) };
+        unsafe { Sector::set_ptr(self, new_ptr) };
     }
 }
 
 impl<T> Len for Sector<Tight, T> {
+    /// Returns the current number of elements in the sector.
     fn __len(&self) -> usize {
-        self.len()
+        Sector::len(self)
     }
 
+    /// Sets the current number of elements in the sector.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because the new length must not exceed the actual allocation.
     fn __len_set(&mut self, new_len: usize) {
-        unsafe { self.set_len(new_len) };
+        unsafe { Sector::set_len(self, new_len) };
     }
 }
 
 impl<T> Cap for Sector<Tight, T> {
+    /// Returns the current capacity of the sector.
+    ///
+    /// This value indicates how many elements the sector can hold without needing to grow.
     fn __cap(&self) -> usize {
         self.capacity()
     }
 
+    /// Sets a new capacity for the sector.
+    ///
+    /// # Safety
+    ///
+    /// The new capacity must be a valid size for the sector's allocation.
     fn __cap_set(&mut self, new_cap: usize) {
         unsafe { self.set_capacity(new_cap) };
     }
 }
 
+/// Implements precise growth behavior for the `Tight` state.
+///
+/// When the sector's current length equals its capacity and more elements are needed,
+/// this implementation grows the sector by exactly `new_len - old_len` elements.
+/// This ensures that the capacity is adjusted minimally to accommodate the new elements.
+///
+/// # Safety
+///
+/// The function uses unchecked operations. The caller must ensure that these operations
+/// do not lead to memory safety issues.
 unsafe impl<T> Grow<T> for Sector<Tight, T> {
     unsafe fn __grow(&mut self, old_len: usize, new_len: usize) {
         if old_len == self.capacity() && size_of::<T>() != 0 {
@@ -82,6 +154,16 @@ unsafe impl<T> Grow<T> for Sector<Tight, T> {
     }
 }
 
+/// Implements precise shrink behavior for the `Tight` state.
+///
+/// When elements are removed and the sector's length decreases,
+/// this implementation shrinks the sector by exactly `old_len - new_len` elements,
+/// releasing the excess capacity.
+///
+/// # Safety
+///
+/// The function uses unchecked operations. The caller must ensure that these operations
+/// do not lead to memory safety issues.
 unsafe impl<T> Shrink<T> for Sector<Tight, T> {
     unsafe fn __shrink(&mut self, old_len: usize, new_len: usize) {
         if old_len > new_len && size_of::<T>() != 0 {
@@ -90,6 +172,9 @@ unsafe impl<T> Shrink<T> for Sector<Tight, T> {
     }
 }
 
+// The following trait provides additional functionallity based on the grow/shrink
+// implementations
+// It also serves to mark the available operations on the sector.
 impl<T> Push<T> for Sector<Tight, T> {}
 impl<T> Pop<T> for Sector<Tight, T> {}
 impl<T> Insert<T> for Sector<Tight, T> {}
@@ -577,7 +662,7 @@ mod tests {
 
     #[test]
     fn test_drain_drop() {
-        let counter = std::cell::Cell::new(0);
+        let counter = core::cell::Cell::new(0);
         {
             let mut sector: Sector<Tight, DropCounter> = Sector::new();
             for _ in 0..5 {

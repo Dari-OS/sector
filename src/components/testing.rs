@@ -63,7 +63,7 @@ pub(crate) use repeat;
 #[allow(dead_code)]
 pub(crate) struct DropCounter<'a> {
     /// Shared counter to increment on drop
-    pub(crate) counter: &'a std::cell::Cell<i32>,
+    pub(crate) counter: &'a core::cell::Cell<i32>,
 }
 
 impl Drop for DropCounter<'_> {

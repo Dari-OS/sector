@@ -5,8 +5,7 @@ A **stateful vector implementation** that provides different memory management b
 ![Rust](https://img.shields.io/badge/Rust-1.70%2B-orange)
 [![MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE-MIT)
 [![Apache 2.0](https://img.shields.io/badge/License-APACHE%202.0-blue.svg)](./LICENSE-MIT)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/Dari-OS/sector/.github%2Fworkflows%2Frust.yml
-)](https://github.com/Dari-OS/sector/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/Dari-OS/sector/.github%2Fworkflows%2Frust.yml)](https://github.com/Dari-OS/sector/actions)
 
 ---
 
@@ -37,7 +36,7 @@ Unlike `Vec<T>`, it allows developers to control how memory grows/shrinks.
 
 - [x] **Lightweight & Fast** – Minimal overhead while allowing full customization.
 
-- [ ] **No Std Support (Planned)** – Future support for `#![no_std]` environments.
+- [x] **No Std Support** – Support for `#![no_std]` environments by default.
 
 ## States
 
@@ -53,14 +52,14 @@ Sector has 6 different states:
 > [!WARNING]
 > Be careful!
 > [**Zero Sized**](https://doc.rust-lang.org/nomicon/exotic-sizes.html) Types are treated differently by each state.
-> Refer to the specific documentation of each state
+> Refer to the specific documentation of each state to get more information.
 
 [`Normal`]: ./src/states/normal.rs#L7
-[`Dynamic`]: ./src/states/dynamic.rs#L7
-[`Fixed`]: ./src/states/fixed.rs#L14
-[`Locked`]: ./src/states/locked.rs#L7
-[`Manual`]: ./src/states/manual.rs#L7
-[`Tight`]: ./src/states/tight.rs#L7
+[`Dynamic`]: ./src/states/dynamic.rs#L23
+[`Fixed`]: ./src/states/fixed.rs#L28
+[`Locked`]: ./src/states/locked.rs#L22
+[`Manual`]: ./src/states/manual.rs#L18
+[`Tight`]: ./src/states/tight.rs#L23
 
 ## Usage
 
@@ -106,7 +105,7 @@ Contributions are welcome!
 
 - [x] Basic stateful vector implementation
 - [x] Capacity management
-- [ ] `no_std` support
+- [x] `no_std` support
 - [ ] Benchmarks & optimizations
 
 ## License

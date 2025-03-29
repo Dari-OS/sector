@@ -1,4 +1,16 @@
-use std::ptr::NonNull;
+//! # Manual Sector State
+//!
+//! The `Manual` state provides explicit control over the sector's capacity, allowing the user
+//! to manually grow or shrink the underlying storage. In this state, aside from the standard
+//! push/pop/insert/remove operations, the unique methods `grow` and `shrink` allow for direct
+//! adjustments to the capacity, which is useful in scenarios where automatic reallocation is
+//! not desired or must be controlled precisely.
+//!
+//! ## Unique Methods
+//!
+//! - **grow:** Manually increases the sector's capacity by a specified amount.
+//! - **shrink:** Manually decreases the sector's capacity by a specified amount.
+use core::ptr::NonNull;
 
 use crate::components::{Cap, Grow, Index, Insert, Len, Pop, Ptr, Push, Remove, Shrink};
 
@@ -11,12 +23,18 @@ impl crate::components::DefaultIter for Manual {}
 impl crate::components::DefaultDrain for Manual {}
 
 impl<T> Sector<Manual, T> {
-    /// Pushes to the *sector* when there is enoguh capacity
+    /// Attempts to push an element to the sector.
+    ///
+    /// # Behavior
+    ///
+    /// - If the sector has remaining capacity (i.e. current length is less than capacity),
+    ///   the element is pushed and the function returns `true`.
+    /// - If the sector is full (current length equals capacity), no element is pushed and the function returns `false`.
     ///
     /// # Returns
     ///
-    /// `true`  - If pushed successfully
-    /// `false` - If capacity is full (the __elem__ wont get pushed)
+    /// - `true` if the element was successfully pushed.
+    /// - `false` if there was insufficient capacity.
     pub fn push(&mut self, elem: T) -> bool {
         if self.__cap() == self.__len() {
             false
@@ -26,16 +44,26 @@ impl<T> Sector<Manual, T> {
         }
     }
 
+    /// Removes the last element from the sector and returns it.
+    ///
+    /// Returns `None` if the sector is empty.
     pub fn pop(&mut self) -> Option<T> {
         self.__pop()
     }
 
-    /// Inserts to the *sector* when there is enoguh capacity
+    /// Attempts to insert an element into the sector at the specified index.
+    ///
+    /// # Behavior
+    ///
+    /// - If there is enough capacity (i.e. current length is less than capacity), the element
+    ///   is inserted at the provided index and the function returns `true`.
+    /// - If the sector is full (current length equals capacity), the insertion is not performed
+    ///   and the function returns `false`.
     ///
     /// # Returns
     ///
-    /// `true`  - If inserted successfully
-    /// `false` - If capacity is full (the __elem__ wont get pushed)
+    /// - `true` if the element was successfully inserted.
+    /// - `false` if there was insufficient capacity.
     pub fn insert(&mut self, index: usize, elem: T) -> bool {
         if self.__cap() == self.__len() {
             false
@@ -45,10 +73,16 @@ impl<T> Sector<Manual, T> {
         }
     }
 
+    /// Removes the element at the specified index and returns it, shifting all elements after it to the left.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index is out of bounds.
     pub fn remove(&mut self, index: usize) -> T {
         self.__remove(index)
     }
 
+    /// Returns a reference to the element at the given index if it exists.
     pub fn get(&self, index: usize) -> Option<&T> {
         if index < self.__len() {
             Some(self.__get(index))
@@ -57,6 +91,7 @@ impl<T> Sector<Manual, T> {
         }
     }
 
+    /// Returns a mutable reference to the element at the given index if it exists.
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         if index < self.__len() {
             Some(self.__get_mut(index))
@@ -65,9 +100,20 @@ impl<T> Sector<Manual, T> {
         }
     }
 
+    /// Attempts to manually grow the sector's capacity by the specified amount.
+    ///
     /// # Returns
     ///
-    /// The actual size the Sector has grown
+    /// The actual size by which the sector's capacity was increased. Returns `0` if no growth occurred.
+    ///
+    /// # Behavior
+    ///
+    /// - If the requested growth amount (`cap_to_grow`) is `0`, if the type `T` is zero-sized, or if the
+    ///   current capacity is at its maximum (`isize::MAX`), no growth is performed and the function returns `0`.
+    /// - Otherwise, the function calculates the target capacity increase and attempts to perform a manual
+    ///   growth operation.
+    /// - If the manual growth operation succeeds, the function returns the requested grow amount.
+    /// - If the operation fails, it returns `0`.
     pub fn grow(&mut self, cap_to_grow: usize) -> usize {
         // TODO: Is this enough zst handling?
         if cap_to_grow == 0 || size_of::<T>() == 0 || self.__cap() >= isize::MAX as usize {
@@ -86,9 +132,21 @@ impl<T> Sector<Manual, T> {
         }
     }
 
+    /// Attempts to manually shrink the sector's capacity by the specified amount.
+    ///
     /// # Returns
     ///
-    /// The actual size the Sector has shrunk
+    /// The actual size by which the sector's capacity was decreased. Returns `0` if no shrinking occurred.
+    ///
+    /// # Behavior
+    ///
+    /// - If the requested shrink amount (`cap_to_shrink`) is `0`, if the type `T` is zero-sized, or if the
+    ///   current capacity is `0`, no shrinking is performed and the function returns `0`.
+    /// - The function calculates the new capacity by subtracting `cap_to_shrink` from the current capacity.
+    /// - If the new capacity is less than the current number of elements, elements beyond the new capacity
+    ///   are dropped, and the sector's length is adjusted accordingly.
+    /// - The function then attempts to perform the manual shrink operation.
+    /// - If the operation is successful, the function returns the shrink factor; otherwise, it returns `0`.
     pub fn shrink(&mut self, cap_to_shrink: usize) -> usize {
         // TODO: Is this enough zst handling?
         if cap_to_shrink == 0 || size_of::<T>() == 0 || self.__cap() == 0 {
@@ -115,43 +173,78 @@ impl<T> Sector<Manual, T> {
 }
 
 impl<T> Ptr<T> for Sector<Manual, T> {
+    /// Returns the raw pointer to the first element in the sector.
+    ///
+    /// # Safety
+    ///
+    /// The pointer is obtained using an unsafe method which assumes the sector’s storage is valid.
     fn __ptr(&self) -> NonNull<T> {
         unsafe { self.as_ptr() }
     }
 
+    /// Sets the raw pointer of the sector to a new value.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the new pointer is valid for the current sector.
     fn __ptr_set(&mut self, new_ptr: NonNull<T>) {
-        unsafe { self.set_ptr(new_ptr) };
+        unsafe { Sector::set_ptr(self, new_ptr) };
     }
 }
 
 impl<T> Len for Sector<Manual, T> {
+    /// Returns the current number of elements in the sector.
     fn __len(&self) -> usize {
-        self.len()
+        Sector::len(self)
     }
 
+    /// Sets the current number of elements in the sector.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because the new length must not exceed the actual allocation.
     fn __len_set(&mut self, new_len: usize) {
-        unsafe { self.set_len(new_len) };
+        unsafe { Sector::set_len(self, new_len) };
     }
 }
 
 impl<T> Cap for Sector<Manual, T> {
+    /// Returns the current capacity of the sector.
+    ///
+    /// This value indicates how many elements the sector can hold without needing to grow.
     fn __cap(&self) -> usize {
         self.capacity()
     }
 
+    /// Sets a new capacity for the sector.
+    ///
+    /// # Safety
+    ///
+    /// The new capacity must be a valid size for the sector's allocation.
     fn __cap_set(&mut self, new_cap: usize) {
         unsafe { self.set_capacity(new_cap) };
     }
 }
 
+/// No-op implementation for automatic growth in the `Manual` state.
+///
+/// In the `Manual` state, automatic growth is disabled because capacity adjustments must be performed
+/// explicitly via the [`grow`] method.
 unsafe impl<T> Grow<T> for Sector<Manual, T> {
     unsafe fn __grow(&mut self, _: usize, _: usize) {}
 }
 
+/// No-op implementation for automatic shrinking in the `Manual` state.
+///
+/// In the `Manual` state, automatic shrinking is disabled because capacity adjustments must be performed
+/// explicitly via the [`shrink`] method.
 unsafe impl<T> Shrink<T> for Sector<Manual, T> {
     unsafe fn __shrink(&mut self, _: usize, _: usize) {}
 }
 
+// The following trait provides additional functionallity based on the grow/shrink
+// implementations
+// It also serves to mark the available operations on the sector.
 impl<T> Push<T> for Sector<Manual, T> {}
 impl<T> Pop<T> for Sector<Manual, T> {}
 impl<T> Insert<T> for Sector<Manual, T> {}
@@ -628,7 +721,7 @@ mod tests {
 
     #[test]
     fn test_drain_drop() {
-        let counter = std::cell::Cell::new(0);
+        let counter = core::cell::Cell::new(0);
         {
             let mut sector: Sector<Manual, DropCounter> = Sector::with_capacity(5);
             for _ in 0..5 {

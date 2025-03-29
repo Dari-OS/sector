@@ -1,9 +1,6 @@
 extern crate sector;
 
-use sector::{
-    states::{Manual, Normal},
-    Sector,
-};
+use sector::{states::Manual, Sector};
 fn main() {
     let mut sec: Sector<Manual, _> = Sector::new();
 

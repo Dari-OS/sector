@@ -56,7 +56,7 @@
 //!
 //! ## Modules
 //! - [`components`](crate::components) – Internal traits defining vector operations.
-//! - [`sector`](crate::sector) – Core implementation of `Sector`.
+//! - [`sector`](crate::sector::Sector) – Core implementation of `Sector`.
 //! - [`states`](crate::states) – Definitions of different memory management states.
 //!
 //! ---

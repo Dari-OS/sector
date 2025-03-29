@@ -55,11 +55,11 @@ Sector has 6 different states:
 > Refer to the specific documentation of each state to get more information.
 
 [`Normal`]: ./src/states/normal.rs#L7
-[`Dynamic`]: ./src/states/dynamic.rs#L7
-[`Fixed`]: ./src/states/fixed.rs#L14
-[`Locked`]: ./src/states/locked.rs#L7
-[`Manual`]: ./src/states/manual.rs#L7
-[`Tight`]: ./src/states/tight.rs#L7
+[`Dynamic`]: ./src/states/dynamic.rs#L23
+[`Fixed`]: ./src/states/fixed.rs#L28
+[`Locked`]: ./src/states/locked.rs#L22
+[`Manual`]: ./src/states/manual.rs#L18
+[`Tight`]: ./src/states/tight.rs#L23
 
 ## Usage
 

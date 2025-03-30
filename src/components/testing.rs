@@ -50,7 +50,7 @@ impl PartialEq for ZeroSizedType {
 macro_rules! repeat {
     ($ele:expr, $times:expr) => {{
         for _ in 0..$times {
-            $ele;
+            let _ = $ele;
         }
     }};
 }

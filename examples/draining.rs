@@ -7,6 +7,6 @@ fn main() {
     assert_eq!(sec.grow(10), 10);
 
     for i in 0..10 {
-        sec.push(i + 1);
+        let _ = sec.push(i + 1);
     }
 }

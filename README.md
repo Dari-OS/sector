@@ -28,7 +28,7 @@ A **stateful vector implementation** that provides different memory management b
 Unlike `Vec<T>`, it allows developers to control how memory grows/shrinks.
 
 > [!NOTE]
-> This library is under **active development**. Expect changes and optimizations.
+> This library is under development. Expect changes and optimizations.
 
 ## Features
 

@@ -27,20 +27,22 @@ impl<T> Sector<Manual, T> {
     ///
     /// # Behavior
     ///
-    /// - If the sector has remaining capacity (i.e. current length is less than capacity),
-    ///   the element is pushed and the function returns `true`.
-    /// - If the sector is full (current length equals capacity), no element is pushed and the function returns `false`.
+    /// - If the sector has remaining capacity (i.e., the current length is less than capacity),
+    ///   the element is pushed, and the function returns `Ok(())`.
+    /// - If the sector is full (i.e., the current length equals capacity), the element is **not** pushed,
+    ///   and the function returns `Err(elem)`, where `elem` is the element that could not be
+    ///   pushed.
     ///
     /// # Returns
     ///
-    /// - `true` if the element was successfully pushed.
-    /// - `false` if there was insufficient capacity.
-    pub fn push(&mut self, elem: T) -> bool {
+    /// - `Ok(())` if the element was successfully pushed.
+    /// - `Err(T)` containing the element if there was insufficient capacity.
+    pub fn push(&mut self, elem: T) -> Result<(), T> {
         if self.__cap() == self.__len() {
-            false
+            Err(elem)
         } else {
             self.__push(elem);
-            true
+            Ok(())
         }
     }
 
@@ -55,21 +57,22 @@ impl<T> Sector<Manual, T> {
     ///
     /// # Behavior
     ///
-    /// - If there is enough capacity (i.e. current length is less than capacity), the element
-    ///   is inserted at the provided index and the function returns `true`.
-    /// - If the sector is full (current length equals capacity), the insertion is not performed
-    ///   and the function returns `false`.
+    /// - If there is enough capacity (i.e., the current length is less than the capacity),  
+    ///   the element is inserted at the provided index, and the function returns `Ok(())`.  
+    /// - If the sector is full (i.e., the current length equals the capacity),  
+    ///   the element is **not** inserted, and the function returns `Err(elem)`,  
+    ///   where `elem` is the element that could not be inserted.
     ///
     /// # Returns
     ///
-    /// - `true` if the element was successfully inserted.
-    /// - `false` if there was insufficient capacity.
-    pub fn insert(&mut self, index: usize, elem: T) -> bool {
+    /// - `Ok(())` if the element was successfully inserted.  
+    /// - `Err(T)` containing the element if there was insufficient capacity.
+    pub fn insert(&mut self, index: usize, elem: T) -> Result<(), T> {
         if self.__cap() == self.__len() {
-            false
+            Err(elem)
         } else {
             self.__insert(index, elem);
-            true
+            Ok(())
         }
     }
 
@@ -261,10 +264,10 @@ mod tests {
     fn test_push_and_get() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(3);
 
-        sector.push(10);
-        sector.push(20);
-        sector.push(30);
-        assert!(!sector.push(40)); // Should return false because there is no capacity left
+        let _ = sector.push(10);
+        let _ = sector.push(20);
+        let _ = sector.push(30);
+        assert_eq!(sector.push(40), Err(40)); // Should return err because there is no capacity left
 
         assert_eq!(sector.get(0), Some(&10));
         assert_eq!(sector.get(1), Some(&20));
@@ -291,9 +294,9 @@ mod tests {
     fn test_pop() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(3);
 
-        sector.push(10);
-        sector.push(20);
-        sector.push(30);
+        let _ = sector.push(10);
+        let _ = sector.push(20);
+        let _ = sector.push(30);
 
         assert_eq!(sector.pop(), Some(30));
         assert_eq!(sector.pop(), Some(20));
@@ -321,10 +324,10 @@ mod tests {
     fn test_insert() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(3);
 
-        sector.push(10);
-        sector.push(30);
-        sector.insert(1, 20);
-        assert!(!sector.insert(1, 20)); // Should return false because there is no capacity left
+        let _ = sector.push(10);
+        let _ = sector.push(30);
+        let _ = sector.insert(1, 20);
+        assert_eq!(sector.insert(1, 20), Err(20)); // Should return err because there is no capacity left
         assert_eq!(sector.get(0), Some(&10));
         assert_eq!(sector.get(1), Some(&20));
         assert_eq!(sector.get(2), Some(&30));
@@ -335,7 +338,7 @@ mod tests {
         let mut sector: Sector<Manual, ZeroSizedType> = Sector::with_capacity(3);
 
         repeat!(sector.push(ZeroSizedType), 2);
-        sector.insert(1, ZeroSizedType);
+        let _ = sector.insert(1, ZeroSizedType);
         assert_eq!(sector.get(0), Some(&ZeroSizedType));
         assert_eq!(sector.get(1), Some(&ZeroSizedType));
         assert_eq!(sector.get(2), Some(&ZeroSizedType));
@@ -345,9 +348,9 @@ mod tests {
     fn test_remove() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(3);
 
-        sector.push(10);
-        sector.push(20);
-        sector.push(30);
+        let _ = sector.push(10);
+        let _ = sector.push(20);
+        let _ = sector.push(30);
 
         assert_eq!(sector.remove(1), 20);
         assert_eq!(sector.get(0), Some(&10));
@@ -373,9 +376,9 @@ mod tests {
     fn test_remove_on_emtpy() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(3);
 
-        sector.push(10);
-        sector.push(20);
-        sector.push(30);
+        let _ = sector.push(10);
+        let _ = sector.push(20);
+        let _ = sector.push(30);
 
         assert_eq!(sector.remove(1), 20);
         assert_eq!(sector.get(0), Some(&10));
@@ -399,9 +402,9 @@ mod tests {
     fn test_get_mut() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(3);
 
-        sector.push(10);
-        sector.push(20);
-        sector.push(30);
+        let _ = sector.push(10);
+        let _ = sector.push(20);
+        let _ = sector.push(30);
 
         if let Some(value) = sector.get_mut(1) {
             *value = 25;
@@ -430,7 +433,7 @@ mod tests {
     fn test_out_of_bounds_access() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(1);
 
-        sector.push(10);
+        let _ = sector.push(10);
 
         assert_eq!(sector.get(1), None);
         assert_eq!(sector.get_mut(1), None);
@@ -440,7 +443,7 @@ mod tests {
     fn test_out_of_bounds_access_zst() {
         let mut sector: Sector<Manual, ZeroSizedType> = Sector::with_capacity(1);
 
-        sector.push(ZeroSizedType);
+        let _ = sector.push(ZeroSizedType);
 
         assert_eq!(sector.get(1), None);
         assert_eq!(sector.get_mut(1), None);
@@ -449,15 +452,15 @@ mod tests {
     #[test]
     fn test_deref() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(5);
-        sector.push(10);
-        sector.push(20);
-        sector.push(30);
-        sector.push(40);
-        sector.push(-10);
+        let _ = sector.push(10);
+        let _ = sector.push(20);
+        let _ = sector.push(30);
+        let _ = sector.push(40);
+        let _ = sector.push(-10);
 
         let derefed_sec = &*sector;
 
-        assert_eq!(derefed_sec.get(0), Some(&10));
+        assert_eq!(derefed_sec.first(), Some(&10));
         assert_eq!(derefed_sec.get(1), Some(&20));
         assert_eq!(derefed_sec.get(2), Some(&30));
         assert_eq!(derefed_sec.get(4), Some(&-10));
@@ -471,7 +474,7 @@ mod tests {
         repeat!(sector.push(ZeroSizedType), 5);
         let derefed_sec = &*sector;
 
-        assert_eq!(derefed_sec.get(0), Some(&ZeroSizedType));
+        assert_eq!(derefed_sec.first(), Some(&ZeroSizedType));
         assert_eq!(derefed_sec.get(1), Some(&ZeroSizedType));
         assert_eq!(derefed_sec.get(2), Some(&ZeroSizedType));
         assert_eq!(derefed_sec.get(4), Some(&ZeroSizedType));
@@ -481,11 +484,11 @@ mod tests {
     #[test]
     fn test_deref_mut() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(5);
-        sector.push(10);
-        sector.push(20);
-        sector.push(30);
-        sector.push(40);
-        sector.push(-10);
+        let _ = sector.push(10);
+        let _ = sector.push(20);
+        let _ = sector.push(30);
+        let _ = sector.push(40);
+        let _ = sector.push(-10);
 
         let derefed_sec = &mut *sector;
 
@@ -493,7 +496,7 @@ mod tests {
         derefed_sec[1] = 200;
         derefed_sec[4] = -100;
 
-        assert_eq!(derefed_sec.get(0), Some(&100));
+        assert_eq!(derefed_sec.first(), Some(&100));
         assert_eq!(derefed_sec.get(1), Some(&200));
         assert_eq!(derefed_sec.get(2), Some(&30));
         assert_eq!(derefed_sec.get(4), Some(&-100));
@@ -511,7 +514,7 @@ mod tests {
         let derefed_sec = &mut *sector;
 
         // We can't really update ZSTs...
-        assert_eq!(derefed_sec.get(0), Some(&ZeroSizedType));
+        assert_eq!(derefed_sec.first(), Some(&ZeroSizedType));
         assert_eq!(derefed_sec.get(1), Some(&ZeroSizedType));
         assert_eq!(derefed_sec.get(2), Some(&ZeroSizedType));
         assert_eq!(derefed_sec.get(4), Some(&ZeroSizedType));
@@ -521,13 +524,13 @@ mod tests {
     #[test]
     fn test_into_iter_next() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(6);
-        sector.push(1000);
-        sector.push(20528);
-        sector.push(3522);
-        sector.push(529388);
-        sector.push(-81893);
-        sector.push(-238146);
-        assert!(!sector.push(-35892281));
+        let _ = sector.push(1000);
+        let _ = sector.push(20528);
+        let _ = sector.push(3522);
+        let _ = sector.push(529388);
+        let _ = sector.push(-81893);
+        let _ = sector.push(-238146);
+        assert_eq!(sector.push(-35892281), Err(-35892281));
 
         let mut iter_sec = sector.into_iter();
 
@@ -564,12 +567,12 @@ mod tests {
     #[test]
     fn test_into_iter_back() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(6);
-        sector.push(1000);
-        sector.push(20528);
-        sector.push(3522);
-        sector.push(529388);
-        sector.push(-81893);
-        sector.push(-238146);
+        let _ = sector.push(1000);
+        let _ = sector.push(20528);
+        let _ = sector.push(3522);
+        let _ = sector.push(529388);
+        let _ = sector.push(-81893);
+        let _ = sector.push(-238146);
 
         let mut iter_sec = sector.into_iter();
 
@@ -609,9 +612,9 @@ mod tests {
     fn test_drain_next() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(3);
 
-        sector.push(1);
-        sector.push(2);
-        sector.push(3);
+        let _ = sector.push(1);
+        let _ = sector.push(2);
+        let _ = sector.push(3);
 
         let mut drain_iter = sector.drain();
 
@@ -625,9 +628,9 @@ mod tests {
     fn test_drain_lifetime() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(3);
 
-        sector.push(1);
-        sector.push(2);
-        sector.push(3);
+        let _ = sector.push(1);
+        let _ = sector.push(2);
+        let _ = sector.push(3);
 
         let mut drain_iter = sector.drain();
 
@@ -655,9 +658,9 @@ mod tests {
     fn test_drain_next_back() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(3);
 
-        sector.push(10);
-        sector.push(20);
-        sector.push(30);
+        let _ = sector.push(10);
+        let _ = sector.push(20);
+        let _ = sector.push(30);
 
         let mut drain_iter = sector.drain();
 
@@ -685,10 +688,10 @@ mod tests {
     fn test_drain_mixed() {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(4);
 
-        sector.push(100);
-        sector.push(200);
-        sector.push(300);
-        sector.push(400);
+        let _ = sector.push(100);
+        let _ = sector.push(200);
+        let _ = sector.push(300);
+        let _ = sector.push(400);
 
         let mut drain_iter = sector.drain();
 
@@ -705,7 +708,7 @@ mod tests {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(5);
 
         for i in 0..5 {
-            sector.push(i);
+            let _ = sector.push(i);
         }
 
         let mut drain_iter = sector.drain();
@@ -725,7 +728,7 @@ mod tests {
         {
             let mut sector: Sector<Manual, DropCounter> = Sector::with_capacity(5);
             for _ in 0..5 {
-                sector.push(DropCounter { counter: &counter });
+                let _ = sector.push(DropCounter { counter: &counter });
             }
             {
                 let mut drain_iter = sector.drain();
@@ -744,7 +747,7 @@ mod tests {
         assert!(sector.capacity() == 100);
 
         for i in 0..100 {
-            assert!(sector.push(i));
+            assert_eq!(sector.push(i), Ok(()));
         }
 
         assert_eq!(sector.len(), 100);
@@ -764,51 +767,51 @@ mod tests {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(19);
         assert_eq!(sector.capacity(), 19);
 
-        assert!(sector.push(1));
+        assert_eq!(sector.push(1), Ok(()));
         assert_eq!(sector.capacity(), 19);
 
-        assert!(sector.push(2));
+        assert_eq!(sector.push(2), Ok(()));
         assert_eq!(sector.capacity(), 19);
 
-        assert!(sector.push(3));
+        assert_eq!(sector.push(3), Ok(()));
         assert_eq!(sector.capacity(), 19);
 
-        assert!(sector.push(4));
+        assert_eq!(sector.push(4), Ok(()));
         assert_eq!(sector.capacity(), 19);
 
-        assert!(sector.push(5));
+        assert_eq!(sector.push(5), Ok(()));
         assert_eq!(sector.capacity(), 19);
 
-        assert!(sector.push(6));
+        assert_eq!(sector.push(6), Ok(()));
         assert_eq!(sector.capacity(), 19);
 
-        assert!(sector.push(7));
+        assert_eq!(sector.push(7), Ok(()));
         assert_eq!(sector.capacity(), 19);
 
-        assert!(sector.push(8));
+        assert_eq!(sector.push(8), Ok(()));
         assert_eq!(sector.capacity(), 19);
 
-        assert!(sector.push(9));
+        assert_eq!(sector.push(9), Ok(()));
         assert_eq!(sector.capacity(), 19);
 
-        repeat!(assert!(sector.push(10)), 10);
+        repeat!(assert_eq!(sector.push(10), Ok(())), 10);
         assert_eq!(sector.capacity(), 19);
 
         // Should now allow pushing -> Cap reached
-        repeat!(assert!(!sector.push(10)), 10);
+        repeat!(assert_eq!(sector.push(10), Err(10)), 10);
 
         // Should set the new cap to 19 + 50
         repeat!(assert_eq!(sector.grow(5), 5), 10);
         // Should fill up cap
-        repeat!(assert!(sector.push(50)), 50);
+        repeat!(assert_eq!(sector.push(50), Ok(())), 50);
         // Should reject new push
-        assert!(!sector.push(51));
+        assert_eq!(sector.push(51), Err(51));
         // Should set the new cap to 69 + 31
         repeat!(assert_eq!(sector.grow(1), 1), 31);
         // Should fill up cap
-        repeat!(assert!(sector.push(31)), 31);
+        repeat!(assert_eq!(sector.push(31), Ok(())), 31);
         // Should reject new push
-        assert!(!sector.push(51));
+        assert_eq!(sector.push(51), Err(51));
     }
 
     #[test]
@@ -816,7 +819,7 @@ mod tests {
         let mut sector: Sector<Manual, ZeroSizedType> = Sector::with_capacity(100);
 
         for _ in 0..100 {
-            assert!(sector.push(ZeroSizedType));
+            assert_eq!(sector.push(ZeroSizedType), Ok(()));
         }
 
         assert_eq!(sector.len(), 100);
@@ -828,25 +831,25 @@ mod tests {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(1000);
         assert_eq!(sector.capacity(), 1000);
 
-        repeat!(assert!(sector.push(1)), 100);
+        repeat!(assert_eq!(sector.push(1), Ok(())), 100);
 
-        repeat!(assert!(sector.push(2)), 100);
+        repeat!(assert_eq!(sector.push(2), Ok(())), 100);
 
-        repeat!(assert!(sector.push(3)), 100);
+        repeat!(assert_eq!(sector.push(3), Ok(())), 100);
 
-        repeat!(assert!(sector.push(4)), 100);
+        repeat!(assert_eq!(sector.push(4), Ok(())), 100);
 
-        repeat!(assert!(sector.push(5)), 100);
+        repeat!(assert_eq!(sector.push(5), Ok(())), 100);
 
-        repeat!(assert!(sector.push(6)), 100);
+        repeat!(assert_eq!(sector.push(6), Ok(())), 100);
 
-        repeat!(assert!(sector.push(7)), 100);
+        repeat!(assert_eq!(sector.push(7), Ok(())), 100);
 
-        repeat!(assert!(sector.push(8)), 100);
+        repeat!(assert_eq!(sector.push(8), Ok(())), 100);
 
-        repeat!(assert!(sector.push(9)), 100);
+        repeat!(assert_eq!(sector.push(9), Ok(())), 100);
 
-        repeat!(assert!(sector.push(10)), 100);
+        repeat!(assert_eq!(sector.push(10), Ok(())), 100);
 
         assert_eq!(sector.capacity(), 1000);
 
@@ -869,25 +872,25 @@ mod tests {
         let mut sector: Sector<Manual, i32> = Sector::with_capacity(1000);
         assert_eq!(sector.capacity(), 1000);
 
-        repeat!(assert!(sector.push(1)), 100);
+        repeat!(assert_eq!(sector.push(1), Ok(())), 100);
 
-        repeat!(assert!(sector.push(2)), 100);
+        repeat!(assert_eq!(sector.push(2), Ok(())), 100);
 
-        repeat!(assert!(sector.push(3)), 100);
+        repeat!(assert_eq!(sector.push(3), Ok(())), 100);
 
-        repeat!(assert!(sector.push(4)), 100);
+        repeat!(assert_eq!(sector.push(4), Ok(())), 100);
 
-        repeat!(assert!(sector.push(5)), 100);
+        repeat!(assert_eq!(sector.push(5), Ok(())), 100);
 
-        repeat!(assert!(sector.push(6)), 100);
+        repeat!(assert_eq!(sector.push(6), Ok(())), 100);
 
-        repeat!(assert!(sector.push(7)), 100);
+        repeat!(assert_eq!(sector.push(7), Ok(())), 100);
 
-        repeat!(assert!(sector.push(8)), 100);
+        repeat!(assert_eq!(sector.push(8), Ok(())), 100);
 
-        repeat!(assert!(sector.push(9)), 100);
+        repeat!(assert_eq!(sector.push(9), Ok(())), 100);
 
-        repeat!(assert!(sector.push(10)), 100);
+        repeat!(assert_eq!(sector.push(10), Ok(())), 100);
 
         assert_eq!(sector.capacity(), 1000);
 
@@ -943,18 +946,7 @@ mod tests {
         assert_eq!(sector.shrink(1000), 0);
         assert_eq!(sector.shrink(!0), 0);
 
-        assert!(!sector.push(1));
-        assert!(!sector.push(1));
-        assert!(!sector.push(1));
-        assert!(!sector.push(1));
-        assert!(!sector.push(1));
-        assert!(!sector.push(1));
-        assert!(!sector.push(1));
-        assert!(!sector.push(1));
-        assert!(!sector.push(1));
-        assert!(!sector.push(1));
-        assert!(!sector.push(1));
-        assert!(!sector.push(1));
+        repeat!(assert_eq!(sector.push(1), Err(1)), 12);
 
         assert_eq!(sector.capacity(), 0);
     }

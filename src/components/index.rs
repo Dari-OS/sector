@@ -15,14 +15,14 @@ pub trait Index<T>: Len + Ptr<T> {
     ///
     /// # Returns
     ///
-    /// * `&T` - Reference to the element.
+    /// * `Some(&T)` - Reference to the element.
+    /// * `None` - If the index is out of bounds
     ///
-    /// # Panics
-    ///
-    /// - Panics if `index` is out of bounds.
-    fn __get(&self, index: usize) -> &T {
-        assert!(index <= self.__len(), "Index out of bounds");
-        unsafe { &*self.__ptr().as_ptr().add(index) }
+    fn __get(&self, index: usize) -> Option<&T> {
+        if index >= self.__len() {
+            return None;
+        }
+        unsafe { Some(&*self.__ptr().as_ptr().add(index)) }
     }
 
     /// Retrieves a mutable reference to an element at a specified index.
@@ -33,13 +33,13 @@ pub trait Index<T>: Len + Ptr<T> {
     ///
     /// # Returns
     ///
-    /// * `&mut T` - Mutable reference to the element.
+    /// * `Some(&mut T)` - Reference to the element.
+    /// * `None` - If the index is out of bounds
     ///
-    /// # Panics
-    ///
-    /// - Panics if `index` is out of bounds.
-    fn __get_mut(&mut self, index: usize) -> &mut T {
-        assert!(index <= self.__len(), "Index out of bounds");
-        unsafe { &mut *self.__ptr().as_ptr().add(index) }
+    fn __get_mut(&mut self, index: usize) -> Option<&mut T> {
+        if index >= self.__len() {
+            return None;
+        }
+        unsafe { Some(&mut *self.__ptr().as_ptr().add(index)) }
     }
 }

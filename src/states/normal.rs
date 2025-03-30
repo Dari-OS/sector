@@ -65,20 +65,12 @@ impl<T> Sector<Normal, T> {
 
     /// Returns a reference to the element at the given index if it exists.
     pub fn get(&self, index: usize) -> Option<&T> {
-        if index < self.__len() {
-            Some(self.__get(index))
-        } else {
-            None
-        }
+        self.__get(index)
     }
 
     /// Returns a mutable reference to the element at the given index if it exists.
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
-        if index < self.__len() {
-            Some(self.__get_mut(index))
-        } else {
-            None
-        }
+        self.__get_mut(index)
     }
 }
 

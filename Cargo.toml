@@ -1,6 +1,6 @@
 [package]
 name = "sector"
-version = "0.1.2"
+version = "0.1.21"
 edition = "2021"
 authors = ["Dari-OS <darius.dev@proton.me>"]
 description = "A stateful vector implementation that provides different memory management behaviors through Rust traits and state machines."
